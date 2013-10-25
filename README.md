@@ -1,26 +1,31 @@
 LSP
 ===
-
+We can include a general description of our project here...
 
 TODO
 ===
-We can use this as a main source for keeping track of our progress & making general notes about the project. 
+We can use this as a main source for keeping track of our own progress as well as the progress of others. We can also use
+this space for taking general notes about the project. 
 
-Serena:
--
--
--
+A link to where you can learn about all this stuff can be found [here](https://help.github.com/articles/github-flavored-markdown).
 
-Ryan:
--
--
--
+**Serena:**
+- [ ] ...
+- [ ] ...
+- [ ] ...
 
-Travis:
--
--
--
+**Ryan:**
+- [ ] ...
+- [ ] ...
+- [ ] ...
 
-Complete
-===
-Move your task to complete when you are done and put your name next to the task. 
+**Travis:**
+- [ ] ...
+- [ ] ...
+- [ ] ...
+
+**All:**
+- [ ] ...
+- [ ] ...
+- [ ] ...
+
