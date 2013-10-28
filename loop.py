@@ -1,6 +1,5 @@
 '''
 Created on Oct 28, 2013
-
 '''
 from pdb_reader import read_pdb
 
@@ -16,6 +15,7 @@ class Loop:
     def closeness(self, other):
         """Determines a score for how closely related two loops are. Returns a decimal
         number [0,inf], 0 is equal, inf is completely different
+        @author Ryan Amos
         """
         #todo
         return 0.0
@@ -25,6 +25,7 @@ def get_loops(pdb_file):
     of the leftover loops
     
     pdb_file -- the name of the PDB file containing the protein
+    @author: Travis Peters
     """
     pdb = read_pdb(pdb_file)
     #todo
