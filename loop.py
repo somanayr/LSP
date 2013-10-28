@@ -1,7 +1,6 @@
 '''
 Created on Oct 28, 2013
 
-@author: ramos
 '''
 from pdb_reader import read_pdb
 
@@ -14,6 +13,13 @@ class Loop:
             self.seq = seq[start:end]
             self.atoms = atoms[start:end]
             
+    def closeness(self, other):
+        """Determines a score for how closely related two loops are. Returns a decimal
+        number [0,inf], 0 is equal, inf is completely different
+        """
+        #todo
+        return 0.0
+            
 def get_loops(pdb_file):
     """Strips out the alpha helices and beta pleated sheets and returns an array
     of the leftover loops
@@ -21,4 +27,5 @@ def get_loops(pdb_file):
     pdb_file -- the name of the PDB file containing the protein
     """
     pdb = read_pdb(pdb_file)
+    #todo
     return [] #returns the loops in the pdb file
