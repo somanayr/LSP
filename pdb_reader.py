@@ -1,8 +1,6 @@
 from math import sqrt
 
 '''
-Created on Oct 28, 2013
-
 @author: CBK
 '''
 
@@ -48,3 +46,15 @@ Very minimal support ---
 
     sses.sort(key=lambda sse: sse.start)
     return sses, atoms
+
+
+def get_loops(pdb_file):
+    """Strips out the alpha helices and beta pleated sheets and returns an array
+    of the leftover loops
+    
+    pdb_file -- the name of the PDB file containing the protein
+    @author: Travis Peters
+    """
+    pdb = read_pdb(pdb_file)
+    #todo
+    return [] #returns the loops in the pdb file
