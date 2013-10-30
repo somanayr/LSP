@@ -5,6 +5,7 @@ from pdb_reader import read_pdb
 import sys
 from SubstitutionMatrix import blosum62
 from numpy.lib.scimath import sqrt
+import numpy
 
 class Loop:
     def __init__(self, seq, atoms, start=0, end=None):
@@ -17,26 +18,30 @@ class Loop:
             
     def closeness(self, other):
         """Determines a score for how closely related two loops are. Returns a decimal
-        number [0,inf], 0 is equal, inf is completely different
+        number [0,inf), 0 is equal, the higher the number, the less similar
         @author Ryan Amos
         """
-        a,b,nw_score = nw(self.seq, other.seq, blosum62, -4)
-        selfIdx = 0
-        otherIdx = 0
-        score = 0.0
-        for idx in range(len(a)):
-            self_point = other_point = None
-            if(idx != '-'):
-                self_point = self.atoms[selfIdx]
-                selfIdx += 1
-            if idx != '-':
-                other_point = other.atoms[otherIdx]
-                otherIdx += 1
-            if other_point != None and self_point != None:
-                score += rmsd(self_point, other_point)
-                
-        #todo
-        return score
+        
+#         v1 = [self.atoms[0], [self.atoms[-1][i] - self.atoms[0][i] for i in range(len(self.atoms[0]))]]
+#         v2 = [other.atoms[0], [other.atoms[-1][i] - other.atoms[0][i] for i in range(len(other.atoms[0]))]]
+#         v2_to_origin = numpy.matrix([1, 0, 0, -v2[0][0]], [0, 1, 0, -v2[0][1]], [0, 0, 1, -v2[0][2]], [0, 0, 0, 1])
+#         
+#         a,b,nw_score = nw(other.seq, other.seq, blosum62, -4)
+#         selfIdx = 0
+#         otherIdx = 0
+#         score = 0.0
+#         for idx in range(len(a)):
+#             self_point = other_point = None
+#             if(idx != '-'):
+#                 self_point = self.atoms[selfIdx]
+#                 selfIdx += 1
+#             if idx != '-':
+#                 other_point = other.atoms[otherIdx]
+#                 otherIdx += 1
+#             if other_point != None and self_point != None:
+#                 score += rmsd(self_point, other_point)
+         
+        return rmsd([rmsd(self.atoms[0],self.atoms[-1])],[rmsd(other.atoms[0], other.atoms[-1])])
     
 def rmsd(p1, p2):
     if len(p1) != len(p2):
@@ -47,6 +52,9 @@ def rmsd(p1, p2):
         total += d * d
     return sqrt(total / len(p1)) #todo remove sqrt?
     
+    
+    
+
 def make_2d_list(nrows, ncols):
     """Create a list of lists, of the given dimensions, filled with None."""
     return [[None]*ncols for i in range(nrows)]
