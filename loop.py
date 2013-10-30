@@ -1,7 +1,6 @@
 '''
 Created on Oct 28, 2013
 '''
-from pdb_reader import read_pdb
 import sys
 from SubstitutionMatrix import blosum62
 from numpy.lib.scimath import sqrt
@@ -15,6 +14,12 @@ class Loop:
         else:
             self.seq = seq[start:end]
             self.atoms = atoms[start:end]
+            
+    def displacement(self):
+        return rmsd(self.atoms[0], self.atoms[-1])
+    
+    def __str__(self):
+        return "".join(self.seq)
             
     def closeness(self, other):
         """Determines a score for how closely related two loops are. Returns a decimal
@@ -47,7 +52,7 @@ def rmsd(p1, p2):
     if len(p1) != len(p2):
         raise Exception("Degree of points must be the same")
     total = 0
-    for t in len(p1):
+    for t in range(len(p1)):
         d = (p1[t] - p2[t])
         total += d * d
     return sqrt(total / len(p1)) #todo remove sqrt?

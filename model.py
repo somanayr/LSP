@@ -1,6 +1,7 @@
 '''
 Created on Oct 28, 2013
 '''
+import numpy
 
 class Model:
     def __init__(self, loops):
@@ -13,4 +14,14 @@ class Model:
     def score(self, loop):
         """Scores how well the loop matches the Model"""
         #todo
-        return 0.0
+        if(len(self.loops) == 0):
+            return float("inf")
+        
+        total = 0
+        for l in self.loops:
+            total += l.closeness(loop)
+        return total / len(self.loops)
+    
+    def __str__(self):
+        mean_displacement = numpy.mean([loop.displacement() for loop in self.loops])
+        return ("Model %f%s" % (mean_displacement, "".join(["\n\t%s" % (loop) for loop in self.loops])))

@@ -3,6 +3,7 @@ from math import sqrt
 '''
 @author: CBK
 '''
+from loop import Loop
 
 class Atom:
     """An atom from a pdb file: residue number, residue type, atom type,
@@ -55,6 +56,20 @@ def get_loops(pdb_file):
     pdb_file -- the name of the PDB file containing the protein
     @author: Travis Peters
     """
-    pdb = read_pdb(pdb_file)
+    
+    """Placeholder code for testing by Ryan Amos"""
+    sses, atoms = read_pdb(pdb_file)
+    resoff = atoms[0].resnum - 0
+    loop_start = atoms[0].resnum
+    loops = []
+    for sse in sses:
+        if(loop_start < sse.start):
+            subset = atoms[loop_start-resoff:sse.start-resoff]
+            loops.append(Loop([atom.restype for atom in subset], [[atom.x, atom.y, atom.z] for atom in subset]))
+        loop_start = sse.end + 1
+    
+#     subset = atoms[loop_start - resoff:]
+#     if(len(subset) != 0):
+#         loops.append(Loop([atom.restype for atom in subset], [[atom.x, atom.y, atom.z] for atom in subset]))
     #todo
-    return [] #returns the loops in the pdb file
+    return loops #returns the loops in the pdb file

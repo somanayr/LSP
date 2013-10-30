@@ -3,8 +3,32 @@ Created on Oct 28, 2013
 '''
 from model import Model
 from random import sample
+from numpy.oldnumeric.ma import floor
+import numpy
 
-def cluster(loops, k):
+EPSILON = .5
+
+def cluster(loops):
+    k = 1
+    prevScore = None
+    prevCentroids = None
+    while True:
+        centroids, clusters = kmeans(loops, k)
+        score = evaluateClusters(centroids, clusters)
+        
+        if(prevScore is not None and score - prevScore < EPSILON):
+            return prevCentroids
+        
+        prevScore = score
+        prevCentroids = centroids
+        
+        k += 1
+        
+def evaluateClusters(centroids, clusters):
+    return numpy.mean([numpy.mean([centroids[i].score(loop) for loop in clusters[i]]) for i in range(len(centroids))])
+    
+
+def kmeans(loops, k):
     """Clusters loops, an array of Loops, into k clusters
     @author: Serena Liu
     """
@@ -31,9 +55,9 @@ def cluster(loops, k):
 #     return [loops[0:len(loops)/2], loops[len(loops)/2:-1], loops[-1:]]
 
 def get_models(clusters):
-    """Returns a list of representative models for each cluster
+    """Returns a list of representative models for each kmeans
     """
-    return [Model(cluster) for cluster in clusters]
+    return [Model(kmeans) for kmeans in clusters]
 
 def predict(seq, models):
     """Predicts which class the sequence belongs to based on the models
@@ -65,13 +89,13 @@ def find_closest(centroids, loop):
 
 def cluster_loops(loops, centroids):
     """Completes one iteration of k-means clustering: sorts each loop in
-    the list of loops into a centroid cluster, then returns the resulting
+    the list of loops into a centroid kmeans, then returns the resulting
     clustering as a list of lists."""
     
     clusters = [[]*len(centroids)] #empty list of lists to hold clusters
     
     #find closest centroid for each loop, and add loop to
-    #the appropriate cluster list
+    #the appropriate kmeans list
     for loop in loops:
         ind = find_closest(centroids, loop)
         clusters[ind].append(loop)
