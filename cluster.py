@@ -3,23 +3,23 @@ Created on Oct 28, 2013
 '''
 from model import Model
 from random import sample
-from numpy.oldnumeric.ma import floor
 import numpy
 
-EPSILON = .5
+EPSILON = .0000001
 
 def cluster(loops):
     k = 1
-    prevScore = None
+    prev_score = None
     prevCentroids = None
     while True:
         centroids, clusters = kmeans(loops, k)
         score = evaluateClusters(centroids, clusters)
-        
-        if(prevScore is not None and score - prevScore < EPSILON):
+        print(score, prev_score, k)
+        print("\n".join([str(centroid) for centroid in centroids]) + "\n" + "\n".join([str([str(c) for c in cluster]) for cluster in clusters]))
+        if(prev_score is not None and prev_score - score < EPSILON):
             return prevCentroids
         
-        prevScore = score
+        prev_score = score
         prevCentroids = centroids
         
         k += 1
@@ -38,18 +38,21 @@ def kmeans(loops, k):
     #get k random loops for initial centroids, converting each
     #loop into Model form (for consistency's sake)
     init_loops = sample(loops, k)
-    new_centroids = [Model([loop]) for loop in init_loops]
-    old_centroids = None
+    centroids = [Model([loop]) for loop in init_loops]
     
     #keep reclustering and calculating new centroids until
     #the centroid lists (and clusters) converge
-    while (new_centroids != old_centroids):
-        old_centroids = new_centroids
-        new_centroids = get_models(cluster_loops(loops, old_centroids))
+    old_score = None
+    score = 0
+    while (old_score != score):
+        clusters = cluster_loops(loops, centroids)
+        centroids = get_models(clusters)
+        score = evaluateClusters(centroids, clusters)
+        old_score = score
     
     #return the final clustering and centroid list
-    clusters = cluster_loops(loops, new_centroids)
-    return (new_centroids, clusters)
+#     clusters = cluster_loops(loops, centroids)
+    return (centroids, clusters)
     
     #todo
 #     return [loops[0:len(loops)/2], loops[len(loops)/2:-1], loops[-1:]]
@@ -57,7 +60,7 @@ def kmeans(loops, k):
 def get_models(clusters):
     """Returns a list of representative models for each kmeans
     """
-    return [Model(kmeans) for kmeans in clusters]
+    return [Model(cluster) for cluster in clusters]
 
 def predict(seq, models):
     """Predicts which class the sequence belongs to based on the models
@@ -92,12 +95,13 @@ def cluster_loops(loops, centroids):
     the list of loops into a centroid kmeans, then returns the resulting
     clustering as a list of lists."""
     
-    clusters = [[]*len(centroids)] #empty list of lists to hold clusters
+    clusters = [[] for i in range(len(centroids))] #empty list of lists to hold clusters
     
     #find closest centroid for each loop, and add loop to
     #the appropriate kmeans list
     for loop in loops:
         ind = find_closest(centroids, loop)
+#         print ind; print [[str(elem) for elem in cluster] for cluster in clusters]; print [str(centroid) for centroid in centroids]; print loop
         clusters[ind].append(loop)
     
     return clusters
