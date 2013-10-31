@@ -54,9 +54,9 @@ class SSE:
 
 class Loop:
     """A loop structure element from a PDB file: seq, atoms, start and end residue numbers."""
-    def __init__(self, seq, atoms, start=0, end=None):
+    def __init__(self, seq, atoms, start, end):
         self.start = start
-        self.end   = end
+        self.end = end
         self.seq = seq
         self.atoms = atoms
         
@@ -85,6 +85,27 @@ def read_pdb(filename):
     sses.sort(key=lambda sse: sse.start)
     
     return sses, atoms
+
+def get_ca_chain(atoms):
+    """Get just the CA atoms from the list.
+Try to make them a legal chain by filling in placeholder CAs for missing
+residues, and choosing just one alternative when there are multiple possible
+CAs for a residue."""
+    cas = [a for a in atoms if a.atomtype=='CA']
+    r1 = cas[0].resnum
+    i = 0
+    while i<len(cas):
+        if cas[i].resnum > r1+i:
+            print('missing ', r1+i)
+            cas.insert(i,Atom(i,'---','CA',None,None,None))
+            i += 1
+        elif cas[i].resnum < r1+i:
+            print('duplicate at ', r1+i-1)
+            del cas[i]
+        else:
+            i += 1
+    return cas
+
 
 def get_loops(pdb_file):
     """
@@ -183,7 +204,7 @@ def get_context(residues, start, end):
     return seq, loop_atoms
 
 if __name__ == '__main__':
-    pdb_filename = "pdb_files/112L.pdb" #argv[1]
+    pdb_filename = "pdb/112L.pdb" #argv[1]
     loops = get_loops(pdb_filename)
     
     # Test: Display loops and their bounds
@@ -196,7 +217,7 @@ if __name__ == '__main__':
     def test_display_loop_seqs():
         print "\nLoop Structure Sequences:"
         for l in loops:
-            print l.get_seq()
+            print l.seq
 
     # Test: Display each loop's residues/atoms
     def test_display_loop_residues():
@@ -216,8 +237,8 @@ if __name__ == '__main__':
     #################################
     #         Test Methods          #
     #################################
-    test_display_loops()
-    #test_display_loop_seqs()
+    #test_display_loops()
+    test_display_loop_seqs()
     #test_display_loop_residues()
     
 
