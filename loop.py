@@ -7,16 +7,19 @@ from numpy.lib.scimath import sqrt
 import numpy
 
 class Loop:
-    def __init__(self, seq, atoms, start=0, end=None):
+    def __init__(self, atoms, start=0, end=None):
         if end is None:
-            self.seq = seq[start:]
             self.atoms = atoms[start:]
         else:
-            self.seq = seq[start:end]
             self.atoms = atoms[start:end]
             
+        self.atom_poses = [[atom.x, atom.y, atom.z] for atom in atoms]
+        resnum = atoms[0].resnum
+        self.seq = [atoms[idx].restype for idx in range(len(atoms)) if idx == 0 or atoms[idx].restype != atoms[idx - 1].restype]
+        print self.seq
+            
     def displacement(self):
-        return rmsd(self.atoms[0], self.atoms[-1])
+        return rmsd(self.atom_poses[0], self.atom_poses[-1])
     
     def __str__(self):
         return "".join(self.seq)
@@ -46,7 +49,7 @@ class Loop:
 #             if other_point != None and self_point != None:
 #                 score += rmsd(self_point, other_point)
          
-        return rmsd([rmsd(self.atoms[0],self.atoms[-1])],[rmsd(other.atoms[0], other.atoms[-1])])
+        return rmsd([rmsd(self.atom_poses[0],self.atom_poses[-1])],[rmsd(other.atom_poses[0], other.atom_poses[-1])])
     
 def rmsd(p1, p2):
     if len(p1) != len(p2):

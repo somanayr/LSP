@@ -59,13 +59,16 @@ def get_loops(pdb_file):
     
     """Placeholder code for testing by Ryan Amos"""
     sses, atoms = read_pdb(pdb_file)
-    resoff = atoms[0].resnum - 0
-    loop_start = atoms[0].resnum
+#     resoff = atoms[0]
+    loop_start = 1
     loops = []
     for sse in sses:
         if(loop_start < sse.start):
-            subset = atoms[loop_start-resoff:sse.start-resoff]
-            loops.append(Loop([atom.restype for atom in subset], [[atom.x, atom.y, atom.z] for atom in subset]))
+            subset = atoms[loop_start - 1:sse.start - 1]
+#             loops.append(Loop([atom.restype for atom in subset], [[atom.x, atom.y, atom.z] for atom in subset]))
+            loop = Loop(subset)
+            if(len(loop.seq) >= 2):
+                loops.append(loop)
         loop_start = sse.end + 1
     
 #     subset = atoms[loop_start - resoff:]
