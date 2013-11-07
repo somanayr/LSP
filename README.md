@@ -34,3 +34,10 @@ A link to where you can learn about all this stuff can be found [here](https://h
 Outstanding Questions:
 ===
 1. Classification: how to find a representative structure? --> RANSAC
+
+
+Dependencies:
+===
+- Python 2.7
+- Biopython, see https://github.com/biopython/biopython
+- DSSP, see http://swift.cmbi.ru.nl/gv/dssp/ (If you are running Mac OSX and are having trouble getting DSSP installed, I suggest this resource: http://proteinz.blogspot.com/2013/02/compiling-dssp-on-osx-lion-redux.html).
