@@ -1,3 +1,7 @@
+# Files that cannot be available publicly... #
+##############################################
+rmsd.py
+
 # Python compiled files #
 #########################
 *.pyc
