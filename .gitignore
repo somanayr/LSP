@@ -8,5 +8,7 @@ rmsd.py
 
 # Files that are unique to us and our dev environment? #
 ########################################################
-.project
-.pydevproject
+.project        # eclipse/pydev stuff
+.pydevproject   # eclipse/pydev stuff
+.DS_Store       # MAC stuff
+dssp            # we don't want to commit a particular dssp executable
