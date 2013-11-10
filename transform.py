@@ -21,14 +21,14 @@ class TransformFrame:
         self.y = y
         self.z = z
     
-    def transformInto(self, point):
+    def transformOutOf(self, point):
         a = [point.x * c for c in self.x]
         b = [point.y * c for c in self.y]
         c = [point.z * c for c in self.z]
         
         return Vec({'xyz'[i]: self.o[i] + a[i] + b[i] + c[i] for i in range(3)})
     
-    def transformOutOf(self, point):
+    def transformInto(self, point):
         translated = [point.__dict__['xyz'[i]] - self.o[i] for i in range(3)]
         return Vec({c: numpy.dot(translated, self.__dict__[c]) for c in 'xyz'})
     
@@ -46,6 +46,8 @@ class TransformFrame:
         y = [c / norm for c in y]
         z = numpy.cross(x, y)
         norm = numpy.linalg.norm(z)
+        if norm == 0:
+            raise "Illegal arguments! x and y cannot be parallel" 
         z = [c / norm for c in z]
         y = numpy.cross(z, x)
         norm = numpy.linalg.norm(y)
@@ -71,12 +73,12 @@ if __name__ == "__main__":
              })
     xVec2 = Vec({
              "x": 0,
-             "y": -1,
-             "z": 0
+             "y": 0,
+             "z": 1
              })
     yVec2 = Vec({
-             "x": 1,
-             "y": 0,
+             "x": 0,
+             "y": 1,
              "z": 0
              })
 #     zVec = {
@@ -102,5 +104,5 @@ if __name__ == "__main__":
     print "Frame2: " + str(frame2)
     print "Point: " + str(point)
     print "Transform to: " + str(frame.transformTo(frame2, point))
-    print "Transform out of: " + str(frame.transformOutOf(point))
-    print "Transform into: " + str(frame.transformInto(point))
+    print "Transform out of: " + str(frame.transformInto(point))
+    print "Transform into: " + str(frame.transformOutOf(point))
