@@ -45,19 +45,38 @@ class TransformFrame:
         norm = numpy.linalg.norm(y)
         y = [c / norm for c in y]
         z = numpy.cross(x, y)
-        y = numpy.cross(x, z)
+        norm = numpy.linalg.norm(z)
+        z = [c / norm for c in z]
+        y = numpy.cross(z, x)
+        norm = numpy.linalg.norm(y)
+        y = [c / norm for c in y]
         return TransformFrame(origin,x,y,z)
     
+    def __str__(self):
+        return ("frame[o=%s,x=%s,y=%s,z=%s]" % (strVecArray(self.o), strVecArray(self.x), strVecArray(self.y), strVecArray(self.z)))
+    
+def strVecArray(vecArray):
+    return ("(%s,%s,%s)" % (str(vecArray[0]), str(vecArray[1]), str(vecArray[2])))
     
 if __name__ == "__main__":
     xVec = Vec({
              "x": 1,
-             "y": 1,
+             "y": 0,
              "z": 0
              })
     yVec = Vec({
-             "x": -1,
+             "x": 0,
              "y": 1,
+             "z": 0
+             })
+    xVec2 = Vec({
+             "x": 0,
+             "y": -1,
+             "z": 0
+             })
+    yVec2 = Vec({
+             "x": 1,
+             "y": 0,
              "z": 0
              })
 #     zVec = {
@@ -73,9 +92,15 @@ if __name__ == "__main__":
     
     point = Vec({
              "x": 1,
-             "y": 1,
-             "z": 1
+             "y": 2,
+             "z" : 1
              })
     
     frame = TransformFrame.createFromVectors(origin, xVec, yVec)
-    print frame.transformOutOf(point)
+    frame2 = TransformFrame.createFromVectors(origin, xVec2, yVec2)
+    print "Frame: " + str(frame)
+    print "Frame2: " + str(frame2)
+    print "Point: " + str(point)
+    print "Transform to: " + str(frame.transformTo(frame2, point))
+    print "Transform out of: " + str(frame.transformOutOf(point))
+    print "Transform into: " + str(frame.transformInto(point))
