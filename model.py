@@ -4,28 +4,72 @@ Created on Oct 28, 2013
 import numpy
 from numpy.matrixlib.defmatrix import matrix
 from numpy.core.fromnumeric import mean
-from numpy.core.numeric import cross
+from numpy.core.numeric import dot
 from numpy.dual import norm
-from transform import TransformFrame
+from transform import TransformFrame, Vec
+from loop import rmsd
+from numpy.lib.scimath import arccos, sqrt
+import transform
 
 class Model:
-    def __init__(self, models=None, loop=None):
+    def __init__(self, parents, positions, sses, ssesSignature):
         '''
         Generates a model from list of similar loops, loops
         '''
-        if models is None and loop is None:
-            raise Exception("Must provide models to merge or loop")
-        self.loop = loop
-        self.models = models
-        if models is not None:
-            self.sses = None
-        else:
-            self.sses = (loop.l_anchor, loop.r_anchor)
-        self.ssesSignature = models[0].ssesSignature if models is not None else sorted([loop.l_type, loop.r_type])
-        self.phi
-        self.theta
-        self.positions
+        self.parents = parents
+        self.positions = positions
+        self.sses = sses
+        self.ssesSignature = ssesSignature
         #todo
+        
+    @classmethod
+    def fromLoop(cls, loop):
+        sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
+        Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]));
+        
+    @classmethod
+    def fromModels(cls, m1, m2):
+        
+        #find necessary vectors
+        sOffsetV = [m1.sses[1][0][c] - m1.sses[0][0][c] for c in 'xyz']
+        sSSEV = [mean([atom[c] for atom in m1.sses[0]]) for c in 'xyz']
+
+        oOffsetV = [m2.sses[1][0][c] - m2.sses[0][0][c] for c in 'xyz']
+        oSSE0V = [mean([atom[c] for atom in m2.sses[0][0]]) for c in 'xyz']
+        oSSE1V = [mean([atom[c] for atom in m2.sses[1]]) for c in 'xyz']
+        
+        oSSEV = oSSE0V
+        
+        sOrigin = m1.sses[0][0]
+        oOrigin = m2.sses[0][0]
+        
+        otherPositions = m2.positions
+        
+        if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
+            scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
+            revPos = [k for k in reversed(m2.positions)]
+            scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
+            if(scoreReversed < scoreNormal):
+                otherPositions = revPos
+                oSSEV = oSSE1V
+                oOffsetV = -oOffsetV
+                oOrigin = m2.sses[1][0]
+            revPos = None
+        
+        sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
+        oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
+        
+        positions = [0]*len(m1.positions)
+        for i in range(len(m1.positions)):
+            sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
+            oPoint = oFrame.transformInto(otherPositions[i])
+            positions[i] = Vec({
+                                'x': sqrt((sPoint.x + oPoint.x) * (sPoint.x + oPoint.x)),
+                                'y': sqrt((sPoint.y + oPoint.y) * (sPoint.y + oPoint.y)),
+                                'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
+                                })
+        
+        Model([m1,m2], positions, m1.sses, m1.ssesSignature)
         
     def score(self, loop):
         """Scores how well the loop matches the Model"""
@@ -50,39 +94,63 @@ class Model:
         return total / len(other.loops)
     
     def compareNEW(self, other):
-        sOffsetV = {c: self.sses[1][0][c] - self.sses[0][0][c] for c in 'xyz'}
-        sSSE0V = {c: mean([atom[c] for atom in self.sses[0]]) for c in 'xyz'}
+        """
+        Compares two models to each other. A higher score is worse. Both models MUST have:
+        1) The same SSE identifier
+        2) The same number of elements in the loop
+        """
+        #check validity
+        if self.ssesSignature != other.ssesSignature:
+            return float('-inf')
+        if len(self.positions) != len(other.positions):
+            return float('-inf')
         
-#         n = norm(sOffsetV)
-#         sX = [c / n for c in sOffsetV]
-#         n = norm(sSSE0V)
-#         sY = [c / n for c in sSSE0V]
-#         sZ = cross(sX, sY)
-#         sY = cross(sX, sZ)
-#         sSSE1V = {c: mean([atom[c] for atom in self.sses[1]]) for c in 'xyz'}
-        
-        oOffsetV = {c: other.sses[1][0][c] - other.sses[0][0][c] for c in 'xyz'}
-        oSSE0V = {c: mean([atom[c] for atom in other.sses[0]]) for c in 'xyz'}
+        if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
+            return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions),
+                       self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)])
+                       )
+        else:
+            return self.__compute_scores(other.sses[0], other.sses[1], other.positions)
         
         
-        toFrame = TransformFrame.createFromVectors(self.sses[0][0], sOffsetV, sSSE0V)
-        fromFrame = TransformFrame.createFromVectors(other.sses[0][0], oOffsetV, oSSE0V)
         
+    def __compute_scores(self, other_sses_0, other_sses_1, other_positions):
+        #get necessary vectors
+        sOffsetV = [self.sses[1][0][c] - self.sses[0][0][c] for c in 'xyz']
+        sSSE0V = [mean([atom[c] for atom in self.sses[0]]) for c in 'xyz']
+        sSSE1V = [mean([atom[c] for atom in self.sses[1]]) for c in 'xyz']
+
+        
+        oOffsetV = [other_sses_1[0][c] - other_sses_0[0][c] for c in 'xyz']
+        oSSE0V = [mean([atom[c] for atom in other_sses_0[0]]) for c in 'xyz']
+        oSSE1V = [mean([atom[c] for atom in other_sses_1]) for c in 'xyz']
+        
+        sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
+        oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
+        
+        total = 0
         for i in range(len(self.positions)):
-            point = fromFrame.transformTo(toFrame, other.positions[i])
+            sPoint = sFrame.transformInto(self.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
+            oPoint = oFrame.transformInto(other_positions[i])
+            total += rmsd(sPoint, oPoint)
+        total /= len(self.positions)
         
-#         n = norm(oOffsetV)
-#         oX = [c / n for c in oOffsetV]
-#         n = norm(oSSE0V)
-#         oY = [c / n for c in oSSE0V]
-#         oZ = cross(oX, oY)
-#         oY = cross(oX, oZ)
-#         oSSE1V = {c: mean([atom[c] for atom in other.sses[1]]) for c in 'xyz'}
+        if(total > 2): #must be at most 2 angstroms apart
+            return float('inf')
         
+        s_theta = arccos(dot(sSSE0V, -sOffsetV) / (norm(sSSE0V) * norm(sOffsetV)))
+        s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
         
+        o_theta = arccos(dot(sSSE0V, -sOffsetV) / (norm(oSSE0V) * norm(oOffsetV)))
+        o_phi = arccos(dot(oSSE1V, oOffsetV) / (norm(oSSE1V) * norm(oOffsetV)))
         
+        s_anchor_d = norm(sOffsetV)
+        o_anchor_d = norm(oOffsetV)
         
-        
+        #Using eculdian distance... is there a better way to do this?
+        #I figure anchor d is the biggest value, and that's the one we want weighted the most heavily
+        #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
+        return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + total;
     
     def __str__(self):
         mean_displacement = numpy.mean([loop.displacement() for loop in self.loops])
