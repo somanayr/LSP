@@ -12,7 +12,7 @@ from numpy.lib.scimath import arccos, sqrt
 import transform
 
 class Model:
-    def __init__(self, parents, positions, sses, ssesSignature):
+    def __init__(self, parents, positions, sses, ssesSignature, seq, size):
         '''
         Generates a model from list of similar loops, loops
         '''
@@ -20,13 +20,13 @@ class Model:
         self.positions = positions
         self.sses = sses
         self.ssesSignature = ssesSignature
-        #todo
+        self.size = size
         
     @classmethod
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]));
+        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]), loop.seq, 1);
         
     @classmethod
     def fromModels(cls, m1, m2):
@@ -70,7 +70,7 @@ class Model:
                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
                                 })
         
-        return Model([m1,m2], positions, m1.sses, m1.ssesSignature)
+        return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
     def score(self, loop):
         """Scores how well the loop matches the Model"""
@@ -154,14 +154,25 @@ class Model:
         #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
         return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + total;
     
+    def get_loops(self, loops):
+        """Finds loops from this and all parent sequences and dumps them into loops"""
+        if(len(self.parents) == 1):
+            loops.append(self.parents[0])
+        else:
+            self.parents[0].get_loops(loops)
+            self.parents[1].get_loops(loops)
+    
     def gen_seq(self):
         """helper method to generate a probabilistic sequence representing a cluster of loops (loops must be the same length)"""
-        num_loops = len(self.loop)
-        seq = [{}]*len(self.loop[0])
+        loops = []
+        self.get_loops(loops)
+        
+        num_loops = len(loops)
+        seq = [{}]*len(loops[0])
         
         #iterate over each of the loop sequences, adding/updating
         #dictionary entries for each amino acid at each sequence position
-        for curr_loop in self.loop:
+        for curr_loop in self.loops:
             curr_seq = curr_loop.seq
             for i in range(len(curr_seq)):
                 aa = curr_seq[i] #retrieve the current amino acid
