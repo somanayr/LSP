@@ -20,7 +20,9 @@ class Model:
         self.positions = positions
         self.sses = sses
         self.ssesSignature = ssesSignature
+        self.seq = seq
         self.size = size
+        self.__loops = None #lazy loaded, NOT SAFE
         
     @classmethod
     def fromLoop(cls, loop):
@@ -155,12 +157,16 @@ class Model:
         return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + total;
     
     def get_loops(self, loops):
-        """Finds loops from this and all parent sequences and dumps them into loops"""
-        if(len(self.parents) == 1):
-            loops.append(self.parents[0])
-        else:
-            self.parents[0].get_loops(loops)
-            self.parents[1].get_loops(loops)
+        """Finds loops from this and all parent sequences and dumps them into loops. Lazy loads loops"""
+        if(self.__loops == None):
+            l = []
+            if(len(self.parents) == 1):
+                l = [self.parents[0]]
+            else:
+                self.parents[0].get_loops(l)
+                self.parents[1].get_loops(l)
+            self.__loops = l
+        loops += self.__loops        
     
     def gen_seq(self):
         """helper method to generate a probabilistic sequence representing a cluster of loops (loops must be the same length)"""
@@ -220,5 +226,7 @@ class Model:
         return merged_seq
         
     def __str__(self):
-        mean_displacement = numpy.mean([loop.displacement() for loop in self.loops])
+        loops = []
+        self.get_loops(loops)
+        mean_displacement = numpy.mean([loop.displacement() for loop in loops])
         return ("Model %f%s" % (mean_displacement, "".join(["\n\t%s" % (loop) for loop in self.loops])))
