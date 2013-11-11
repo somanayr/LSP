@@ -62,7 +62,7 @@ def kmeans(loops, k):
 def get_models(clusters):
     """Returns a list of representative models for each kmeans
     """
-    return [Model(cluster) for cluster in clusters]
+    return [Model(loop = cluster) for cluster in clusters]
 
 def predict(seq, models):
     """Predicts which class the sequence belongs to based on the models
@@ -142,7 +142,7 @@ def length_cluster(loops):
 def hierarchical(models):
     """A tree (nested lists) for the loop Models."""
     if not type(models[0]) is Model:
-        models = get_models(models)
+        models = [Model(loop = [model]) for model in models]
     
     if len(models)<=1: return models #if there's one or fewer models, return as is
                                         #there's no clustering to be done
@@ -161,19 +161,25 @@ def hierarchical(models):
         #if both subtrees are still active, merge and update queue/lists;
         #otherwise, ignore
         if (sub1 in active_subtrees) and (sub2 in active_subtrees):
-            #remove subtrees from active list (they will now be merged)
-            active_subtrees.remove(sub1); active_subtrees.remove(sub2)
+            #if the subtree pair is too different to be mergeable, then
+            #all other pairs will also be too different (since the PriQ is
+            #keyed by distance). In this case, return final cluster list.
+            if not (mergeable(sub1, sub2)):
+                return [sub[1] for sub in active_subtrees]
             
-            #merge the subtrees together, then update dist_q and active_subtrees
-            #to include the new subtree
-            merged = merge(sub1, sub2) 
-            update_queue(dist_q, merged, active_subtrees)
-            active_subtrees.append(merged)
+            else:
+                #remove subtrees from active list (they will now be merged)
+                active_subtrees.remove(sub1); active_subtrees.remove(sub2)
+                
+                #merge the subtrees together, then update dist_q and active_subtrees
+                #to include the new subtree
+                merged = merge(sub1, sub2) 
+                update_queue(dist_q, merged, active_subtrees)
+                active_subtrees.append(merged)
     
-    #last item in active_subtrees is the entry describing the completed tree
-    #retrieve the tree and return it
-    complete_tree = active_subtrees[0][2]
-    return complete_tree
+    #if we arrive at this point, then everything clustered together;
+    #just return the overarching representative model in this case
+    return active_subtrees[0][1]
 
 
 #helper function to convert a list of Models into a list
@@ -220,6 +226,15 @@ def update_queue(q, new_tree, active_subtrees):
         q.put((tree, new_tree), dist) #update the queue with new pair entry
 
 
+#helper function to determine whether two clusters are similar
+#enough to be merged
+def mergeable(sub1, sub2):
+    """Returns true if two clusters are similar enough to be merged.
+    Depends on Model's compare() function returning infinity if the RMSD
+    between representative loop structures is above the given threshold."""
+    return sub1[1].compare(sub2[1]) != float("inf")
+
+
 #helper function to merge two subtree entries, given two tuples
 #of the format: (num_loops, rep_model, subtree), where num_loops is
 #the total number of loops represented by the subtree cluster, 
@@ -233,11 +248,11 @@ def merge(sub1, sub2):
     
     merge_n = n1 + n2
     tot_loops = m1.loops + m2.loops #masterlist of loops
-    rep_model = Model(tot_loops)
+    rep_model = Model(loop = tot_loops)
     merged_tree = [tree1, tree2] #list of lists format
     
     return (merge_n, rep_model, merged_tree)
-    
+
 
 def print_tree(tree):
     """Print the tree."""
