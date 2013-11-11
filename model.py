@@ -24,12 +24,13 @@ class Model:
         
     @classmethod
     def fromLoop(cls, loop):
+        """Returns a Model representing the loop"""
         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]));
+        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]));
         
     @classmethod
     def fromModels(cls, m1, m2):
-        
+        """Returns a Model representing a merge of m1 and m2"""
         #find necessary vectors
         sOffsetV = [m1.sses[1][0][c] - m1.sses[0][0][c] for c in 'xyz']
         sSSEV = [mean([atom[c] for atom in m1.sses[0]]) for c in 'xyz']
@@ -69,7 +70,7 @@ class Model:
                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
                                 })
         
-        Model([m1,m2], positions, m1.sses, m1.ssesSignature)
+        return Model([m1,m2], positions, m1.sses, m1.ssesSignature)
         
     def score(self, loop):
         """Scores how well the loop matches the Model"""
@@ -115,6 +116,7 @@ class Model:
         
         
     def __compute_scores(self, other_sses_0, other_sses_1, other_positions):
+        """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
         sOffsetV = [self.sses[1][0][c] - self.sses[0][0][c] for c in 'xyz']
         sSSE0V = [mean([atom[c] for atom in self.sses[0]]) for c in 'xyz']
@@ -152,9 +154,8 @@ class Model:
         #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
         return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + total;
     
-    #helper method to generate a probabilistic sequence representing
-    #a cluster of loops (loops must be the same length)
-    def gen_seq(self):     
+    def gen_seq(self):
+        """helper method to generate a probabilistic sequence representing a cluster of loops (loops must be the same length)"""
         num_loops = len(self.loop)
         seq = [{}]*len(self.loop[0])
         
@@ -178,18 +179,14 @@ class Model:
         #normalize the sequence (so probabilities sum to 1), then return
         return self.normalize_seq(seq, num_loops)
     
-    #helper method to normalize a probabilistic sequence,
-    #given the total number of entries per sequence location
     def normalize_seq(self, seq, n):
+        """helper method to normalize a probabilistic sequence, given the total number of entries per sequence location"""
         for pos in seq:
             for aa in pos.keys():
                 pos[aa] /= n
     
-    
-    #helper method to merge two probabilistic sequences,
-    #given two models (each with their own representative sequence)
-    #and their respective weights (i.e. number of loops represented)
     def merge_seqs(self, other, n1, n2):
+        """helper method to merge two probabilistic sequences, given two models (each with their own representative sequence) and their respective weights (i.e. number of loops represented)"""
         merged_seq = [{}]*len(self.seq)
         weight1 = float(n1/(n1 + n2))
         weight2 = float(n2/(n1 + n2))
