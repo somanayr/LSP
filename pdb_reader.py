@@ -233,7 +233,7 @@ def dssp_sse_extract_from_pdb(filename):
             
     return sses
 
-def get_loops(pdb_file):
+def get_loops(pdb_file, numAnchors=1):
     """
     Strips out alpha helices and beta pleated sheets and returns an array of the leftover loops.
     @author: Travis Peters
@@ -275,7 +275,7 @@ def get_loops(pdb_file):
         
         # Construct loop structure        
         if (lend - lstart) + 1 > 0:
-            seq, loop_res, la, ra = get_context(residues, lstart, lend)
+            seq, loop_res, la, ra = get_context(residues, lstart, lend, numAnchors)
             loops.append(Loop(seq, loop_res, lstart, lend, (la,ltype), (ra,rtype)))
         
         # Test: display SSE(s) & Loop(s) ------------ #            
@@ -416,13 +416,35 @@ def test_dssp_pdb_extract(numFilesToRead=5):
         
             processed += 1
 
+# Test: Display the anchor atoms for each loop in the list of loops.
+def test_get_loop_anchors(loops):
+    for loop in loops:
+        print loop
+        
+        print "  Left:",
+        if len(loop.l_anchor) > 0:
+            for a in loop.l_anchor:
+                print str(a),
+            print
+        else:
+            print " <None> "
+            
+        print "  Right:",
+        if len(loop.r_anchor) > 0:
+            for a in loop.r_anchor:
+                print str(a),
+            print
+        else:
+            print " <None> "
+            
 if __name__ == '__main__':
+
 #    pdb_filename = argv[1]
     pdb_dir = "pdb/"
     files = os.listdir(pdb_dir)
     pdb_filename = pdb_dir + files[0]
     
-    loops = get_loops(pdb_filename)
+    loops = get_loops(pdb_filename, numAnchors=3)
 
     #################################
     #         Test Methods          #
@@ -431,4 +453,6 @@ if __name__ == '__main__':
     #test_display_loops(loops)
     #test_display_loop_seqs(loops)
     #test_display_loop_residues(loops)
-    test_dssp_pdb_extract(1)
+    #test_dssp_pdb_extract(1)
+    test_get_loop_anchors(loops)
+     
