@@ -192,11 +192,11 @@ class Model:
         self.get_loops(loops)
         
         num_loops = len(loops)
-        seq = [{}]*len(loops[0])
+        seq = [{} for i in range(len(loops[0]))]
         
         #iterate over each of the loop sequences, adding/updating
         #dictionary entries for each amino acid at each sequence position
-        for curr_loop in self.loops:
+        for curr_loop in loops:
             curr_seq = curr_loop.seq
             for i in range(len(curr_seq)):
                 aa = curr_seq[i] #retrieve the current amino acid
@@ -219,12 +219,13 @@ class Model:
         for pos in seq:
             for aa in pos.keys():
                 pos[aa] /= n
+        return seq
     
     def merge_seqs(self, other, n1, n2):
         """helper method to merge two probabilistic sequences, given two models (each with their own representative sequence) and their respective weights (i.e. number of loops represented)"""
-        merged_seq = [{}]*len(self.seq)
-        weight1 = float(n1/(n1 + n2))
-        weight2 = float(n2/(n1 + n2))
+        merged_seq = [{} for i in range(len(self.seq))]
+        weight1 = (n1/float(n1 + n2))
+        weight2 = (n2/float(n1 + n2))
         for i in range(len(merged_seq)):
             #add in first model's weighted sequence info
             for aa in self.seq[i].keys():
