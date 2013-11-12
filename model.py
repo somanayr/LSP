@@ -66,7 +66,7 @@ class Model:
             if(scoreReversed < scoreNormal):
                 otherPositions = revPos
                 oSSEV = oSSE1V
-                oOffsetV = -oOffsetV
+                oOffsetV = negative(oOffsetV)
                 oOrigin = m2.sses[1][0]
             revPos = None
         
