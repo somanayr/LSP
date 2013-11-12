@@ -10,6 +10,8 @@ from transform import TransformFrame, Vec
 from loop import rmsd
 from numpy.lib.scimath import arccos, sqrt
 import transform
+import sys
+from numpy.ma.core import negative
 
 class Model:
     def __init__(self, parents, positions, sses, ssesSignature, seq, size):
@@ -28,18 +30,21 @@ class Model:
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], "".join([sses[0][0], sses[1][0]]), loop.seq, 1);
+        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], [sses[0][0], sses[1][0]], loop.seq, 1);
         
     @classmethod
     def fromModels(cls, m1, m2):
         """Returns a Model representing a merge of m1 and m2"""
         #find necessary vectors
-        sOffsetV = [m1.sses[1][0][c] - m1.sses[0][0][c] for c in 'xyz']
-        sSSEV = [mean([atom[c] for atom in m1.sses[0]]) for c in 'xyz']
 
-        oOffsetV = [m2.sses[1][0][c] - m2.sses[0][0][c] for c in 'xyz']
-        oSSE0V = [mean([atom[c] for atom in m2.sses[0][0]]) for c in 'xyz']
-        oSSE1V = [mean([atom[c] for atom in m2.sses[1]]) for c in 'xyz']
+        sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
+        sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
+
+        
+#         oOffsetV = [m2.sses[1][0][c] - m2.sses[0][0][c] for c in 'xyz']
+        oOffsetV = [m2.positions[-1].__dict__[c] - m2.positions[0].__dict__[c] for c in 'xyz']
+        oSSE0V = [m2.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[0]]) for c in 'xyz']
+        oSSE1V = [m2.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[1]]) for c in 'xyz']
         
         oSSEV = oSSE0V
         
@@ -76,7 +81,9 @@ class Model:
         
     def score(self, loop):
         """Scores how well the loop matches the Model"""
-        #todo
+        
+        sys.stderr.write("Score is deprecated, please do not use!\n")
+        
         if(len(self.loops) == 0):
             return float("inf")
         
@@ -85,7 +92,7 @@ class Model:
             total += l.closeness(loop)
         return total / len(self.loops)
     
-    def compare(self, other):
+    def compareOLD(self, other):
         """Scores how close two Models are."""
         #todo
         if (len(other.loops) == 0):
@@ -96,7 +103,7 @@ class Model:
             total += self.score(loop)
         return total / len(other.loops)
     
-    def compareNEW(self, other):
+    def compare(self, other):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -120,14 +127,17 @@ class Model:
     def __compute_scores(self, other_sses_0, other_sses_1, other_positions):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
-        sOffsetV = [self.sses[1][0][c] - self.sses[0][0][c] for c in 'xyz']
-        sSSE0V = [mean([atom[c] for atom in self.sses[0]]) for c in 'xyz']
-        sSSE1V = [mean([atom[c] for atom in self.sses[1]]) for c in 'xyz']
+        print(self.sses)
+#         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
+        sOffsetV = [self.positions[-1].__dict__[c] - self.positions[0].__dict__[c] for c in 'xyz']
+        sSSE0V = [self.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[0]]) for c in 'xyz']
+        sSSE1V = [self.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[1]]) for c in 'xyz']
 
         
-        oOffsetV = [other_sses_1[0][c] - other_sses_0[0][c] for c in 'xyz']
-        oSSE0V = [mean([atom[c] for atom in other_sses_0[0]]) for c in 'xyz']
-        oSSE1V = [mean([atom[c] for atom in other_sses_1]) for c in 'xyz']
+#         oOffsetV = [other_sses_1[0][c] - other_sses_0[0][c] for c in 'xyz']
+        oOffsetV = [other_positions[-1].__dict__[c] - other_positions[0].__dict__[c] for c in 'xyz']
+        oSSE0V = [other_positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_0]) for c in 'xyz']
+        oSSE1V = [other_positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_1]) for c in 'xyz']
         
         sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
@@ -142,10 +152,10 @@ class Model:
         if(total > 2): #must be at most 2 angstroms apart
             return float('inf')
         
-        s_theta = arccos(dot(sSSE0V, -sOffsetV) / (norm(sSSE0V) * norm(sOffsetV)))
+        s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
         s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
         
-        o_theta = arccos(dot(sSSE0V, -sOffsetV) / (norm(oSSE0V) * norm(oOffsetV)))
+        o_theta = arccos(dot(oSSE0V, negative(oOffsetV)) / (norm(oSSE0V) * norm(oOffsetV)))
         o_phi = arccos(dot(oSSE1V, oOffsetV) / (norm(oSSE1V) * norm(oOffsetV)))
         
         s_anchor_d = norm(sOffsetV)
@@ -228,5 +238,7 @@ class Model:
     def __str__(self):
         loops = []
         self.get_loops(loops)
-        mean_displacement = numpy.mean([loop.displacement() for loop in loops])
-        return ("Model %f%s" % (mean_displacement, "".join(["\n\t%s" % (loop) for loop in self.loops])))
+        mean_displacement = self.seq
+        loops = []
+        self.get_loops(loops)
+        return ("Model %s%s" % (mean_displacement, "".join(["\n\t%s" % (loop) for loop in loops])))

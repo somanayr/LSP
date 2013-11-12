@@ -142,7 +142,7 @@ def length_cluster(loops):
 def hierarchical(models):
     """A tree (nested lists) for the loop Models."""
     if not type(models[0]) is Model:
-        models = [Model(loop = [model]) for model in models]
+        models = [Model.fromLoop(model) for model in models]
     
     if len(models)<=1: return models #if there's one or fewer models, return as is
                                         #there's no clustering to be done
@@ -247,8 +247,8 @@ def merge(sub1, sub2):
     (n2, m2, tree2) = sub2
     
     merge_n = n1 + n2
-    tot_loops = m1.loops + m2.loops #masterlist of loops
-    rep_model = Model(loop = tot_loops)
+#     tot_loops = m1.loops + m2.loops #masterlist of loops
+    rep_model = Model.fromModels(m1, m2)
     merged_tree = [tree1, tree2] #list of lists format
     
     return (merge_n, rep_model, merged_tree)
