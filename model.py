@@ -36,6 +36,12 @@ class Model:
     def fromModels(cls, m1, m2):
         """Returns a Model representing a merge of m1 and m2"""
         #find necessary vectors
+        
+        
+        if m1.ssesSignature != m2.ssesSignature:
+            return Exception("Loop SSE signature mismatch!")
+        if len(m1.positions) != len(m2.positions):
+            raise Exception("Loop length mismatch!")
 
         sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
         sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
@@ -71,11 +77,13 @@ class Model:
         for i in range(len(m1.positions)):
             sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
             oPoint = oFrame.transformInto(otherPositions[i])
-            positions[i] = Vec({
-                                'x': sqrt((sPoint.x + oPoint.x) * (sPoint.x + oPoint.x)),
-                                'y': sqrt((sPoint.y + oPoint.y) * (sPoint.y + oPoint.y)),
-                                'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
-                                })
+#             positions[i] = Vec({
+#                                 'x': sqrt((sPoint.x + oPoint.x) * (sPoint.x + oPoint.x)),
+#                                 'y': sqrt((sPoint.y + oPoint.y) * (sPoint.y + oPoint.y)),
+#                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
+#                                 })
+
+            positions[i] = Vec({'xyz'[i]: sqrt((sPoint[i] + oPoint[i]) * (sPoint[i] + oPoint[i])) for i in range(3)})
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
@@ -111,9 +119,9 @@ class Model:
         """
         #check validity
         if self.ssesSignature != other.ssesSignature:
-            return float('-inf')
+            return float('inf')
         if len(self.positions) != len(other.positions):
-            return float('-inf')
+            return float('inf')
         
         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
             return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions),

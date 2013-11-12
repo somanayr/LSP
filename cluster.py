@@ -173,6 +173,7 @@ def hierarchical(models):
                 
                 #merge the subtrees together, then update dist_q and active_subtrees
                 #to include the new subtree
+                print("Merging %s, %s, %f" % (str(sub1[1]), str(sub2[1]), sub1[1].compare(sub2[1])))
                 merged = merge(sub1, sub2) 
                 update_queue(dist_q, merged, active_subtrees)
                 active_subtrees.append(merged)
