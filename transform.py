@@ -35,6 +35,7 @@ class TransformFrame:
         self.retMode = RET_MODE_ARRAY
     
     def transformOutOf(self, point):
+        """Algorithm taken from Dartmouth class CS77 framework code by Jonathan Denning, http://www.cs.dartmouth.edu/~cs77/assignments/assignment02.zip"""
         a = [point.x * c for c in self.x]
         b = [point.y * c for c in self.y]
         c = [point.z * c for c in self.z]
@@ -45,6 +46,7 @@ class TransformFrame:
             return [self.o[i] + a[i] + b[i] + c[i] for i in range(3)]
     
     def transformInto(self, point):
+        """Algorithm taken from Dartmouth class CS77 framework code by Jonathan Denning, http://www.cs.dartmouth.edu/~cs77/assignments/assignment02.zip"""
         translated = [point.__dict__['xyz'[i]] - self.o[i] for i in range(3)]
         if(self.retMode == RET_MODE_VECTOR):
             return Vec({c: numpy.dot(translated, self.__dict__[c]) for c in 'xyz'})

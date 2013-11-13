@@ -44,13 +44,15 @@ class Model:
             raise Exception("Loop length mismatch!")
 
         sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
-        sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
-
+#         sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
+        sSSEV = Model.get_sse_vector(m1.sses[0], m1.positions[0])
         
 #         oOffsetV = [m2.sses[1][0][c] - m2.sses[0][0][c] for c in 'xyz']
         oOffsetV = [m2.positions[-1].__dict__[c] - m2.positions[0].__dict__[c] for c in 'xyz']
-        oSSE0V = [m2.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[0]]) for c in 'xyz']
-        oSSE1V = [m2.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[1]]) for c in 'xyz']
+#         oSSE0V = [m2.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[0]]) for c in 'xyz']
+#         oSSE1V = [m2.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[1]]) for c in 'xyz']
+        oSSE0V = Model.get_sse_vector(m1.sses[0], m1.positions[0])
+        oSSE1V = Model.get_sse_vector(m1.sses[1], m1.positions[-1])
         
         oSSEV = oSSE0V
         
@@ -83,9 +85,16 @@ class Model:
 #                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
 #                                 })
 
-            positions[i] = Vec({'xyz'[i]: sqrt((sPoint[i] + oPoint[i]) * (sPoint[i] + oPoint[i])) for i in range(3)})
+            positions[i] = Vec({'xyz'[i]: m1.positions[i].__dict__[c] + sqrt((sPoint[i] + oPoint[i]) * (sPoint[i] + oPoint[i])) for i in range(3)})
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
+        
+    @classmethod
+    def get_sse_vector(cls, sse_atoms, loop_anchor):
+        if(len(sse_atoms) == 1):
+            return [loop_anchor.__dict__[c] - sse_atoms[0].__dict__[c] for c in 'xyz']
+        else:
+            return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
         
     def score(self, loop):
         """Scores how well the loop matches the Model"""
@@ -146,6 +155,8 @@ class Model:
         oOffsetV = [other_positions[-1].__dict__[c] - other_positions[0].__dict__[c] for c in 'xyz']
         oSSE0V = [other_positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_0]) for c in 'xyz']
         oSSE1V = [other_positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_1]) for c in 'xyz']
+#         oSSE0V = Model.get_sse_vector(m1.sses[0], m1.positions[0])
+#         oSSE1V = Model.get_sse_vector(m1.sses[1], m1.positions[-1])
         
         sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
