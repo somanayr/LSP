@@ -85,9 +85,10 @@ class Model:
 #                                 'y': sqrt((sPoint.y + oPoint.y) * (sPoint.y + oPoint.y)),
 #                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
 #                                 })
-
-            
-            positions.append(Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] + sqrt((sPoint[j] + oPoint[j]) * (sPoint[j] + oPoint[j])) for j in range(3)}))
+            print("Transformed %s to %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(sPoint), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(oPoint)))
+            v = Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] - sPoint[j] + sqrt((sPoint[j] + oPoint[j]) * (sPoint[j] + oPoint[j])) for j in range(3)})
+            print "Merging %s and %s to %s" % (str(m1.positions[i]), str(m2.positions[i]), str(v))
+            positions.append(v)
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
@@ -146,7 +147,7 @@ class Model:
     def __compute_scores(self, other_sses_0, other_sses_1, other_positions):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
-        print(self.sses)
+#         print(self.sses)
         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
 #         sOffsetV = [self.positions[-1].__dict__[c] - self.positions[0].__dict__[c] for c in 'xyz']
 #         sOffsetV = 
@@ -268,4 +269,13 @@ class Model:
 #         loops = []
 #         self.get_loops(loops)
         
-        return ("Model[\n\tsignature=%s\tloop_len=%d\tseq=%s\n]" % (str(self.ssesSignature), len(self.positions), str(self.seq)))
+        return ("Model[\n\tsize=%d,\n\tsignature=%s,\n\tsses=[\n\t\t%s,\n\t\t%s\n\t]\n\tloop_len=%d,\n\tseq=%s,\n\tpositions=%s\n]" % (
+                                                                                        self.size,
+                                                                                        str(self.ssesSignature),
+                                                                                        str([Vec(sses) for sses in self.sses[0]]),
+                                                                                        str([Vec(sses) for sses in self.sses[1]]),
+                                                                                        len(self.positions),
+                                                                                        "[\n\t\t" + "\n\t\t".join([str(elem) for elem in self.seq]) + "\n\t]",
+                                                                                        "[\n\t\t" + "\n\t\t".join([str(pos if type(pos) is Vec else Vec(pos)) for pos in self.positions]) + "\n\t]"
+                                                                                        )
+                )

@@ -7,10 +7,12 @@ import numpy
 import math
 
 class Vec:
-    def __init__(self, dict):
-        self.x = dict['x']
-        self.y = dict['y']
-        self.z = dict['z']
+    def __init__(self, d):
+        if(not isinstance(d, dict)):
+            d = d.__dict__
+        self.x = d['x']
+        self.y = d['y']
+        self.z = d['z']
         
     def __str__(self):
         return ("(%s,%s,%s)" % (str(self.x), str(self.y), str(self.z)))
@@ -22,6 +24,9 @@ class Vec:
         dict["y"] = ar[1]
         dict["z"] = ar[2]
         return Vec(dict)
+    
+    def __repr__(self):
+        return self.__str__()
 
 RET_MODE_VECTOR = 0
 RET_MODE_ARRAY = 1
@@ -65,7 +70,7 @@ class TransformFrame:
         norm = numpy.linalg.norm(x)
         x = [c / norm for c in x]
         norm = numpy.linalg.norm(y)
-        print norm
+#         print norm
         if(math.isnan(norm) or norm == 0):
             print y
             print "ERROR! is nan or 0"

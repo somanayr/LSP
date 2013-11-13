@@ -21,17 +21,21 @@ if __name__ == '__main__':
             l_cand = get_loops("pdb/" + f) #get loop candidates
             
             for loop in l_cand:
-                print loop.l_anchor
-                print loop.r_anchor
+#                 print loop.l_anchor
+#                 print loop.r_anchor
                 if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1):
                     loops.append(loop)
             
             print len(loops)
             
             if(len(loops) >= 200): break
-    for loop in loops:
-        print Model.fromLoop(loop)
+#     for loop in loops:
+#         print Model.fromLoop(loop)
         
-    print hierarchical(loops)
+    results = hierarchical(loops)
+        
+    print "\n\n\n\n----Results----"
+    for model in results:
+        print model
         
     
