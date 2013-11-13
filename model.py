@@ -86,8 +86,8 @@ class Model:
 #                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
 #                                 })
             print("Transformed %s to %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(sPoint), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(oPoint)))
-            v = Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] - sPoint[j] + sqrt((sPoint[j] + oPoint[j]) * (sPoint[j] + oPoint[j])) for j in range(3)})
-            print "Merging %s and %s to %s" % (str(m1.positions[i]), str(m2.positions[i]), str(v))
+            v = Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] - sPoint[j] + (sPoint[j] + oPoint[j]) / 2 for j in range(3)})
+            print "Merging %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(v))
             positions.append(v)
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
