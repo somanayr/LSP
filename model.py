@@ -30,7 +30,7 @@ class Model:
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], [sses[0][0], sses[1][0]], loop.seq, 1);
+        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], [sses[0][0], sses[1][0]], Model.gen_seq([loop.seq]), 1);
         
     @classmethod
     def fromModels(cls, m1, m2):
@@ -185,21 +185,19 @@ class Model:
                 self.parents[1].get_loops(l)
             self.__loops = l
         loops += self.__loops        
-    
-    def gen_seq(self):
+   
+    @classmethod
+    def gen_seq(cls, loops):
         """helper method to generate a probabilistic sequence representing a cluster of loops (loops must be the same length)"""
-        loops = []
-        self.get_loops(loops)
-        
+
         num_loops = len(loops)
-        seq = [{} for i in range(len(loops[0].seq))]
+        seq = [{} for i in range(len(loops[0]))]
         
         #iterate over each of the loop sequences, adding/updating
         #dictionary entries for each amino acid at each sequence position
         for curr_loop in loops:
-            curr_seq = curr_loop.seq
-            for i in range(len(curr_seq)):
-                aa = curr_seq[i] #retrieve the current amino acid
+            for i in range(len(curr_loop)):
+                aa = curr_loop[i] #retrieve the current amino acid
                 
                 #if the amino acid's already represented at that sequence
                 #location, just increment the count
@@ -212,9 +210,10 @@ class Model:
                     seq[i][aa] = 1.0
         
         #normalize the sequence (so probabilities sum to 1), then return
-        return self.normalize_seq(seq, num_loops)
+        return Model.normalize_seq(seq, num_loops)
     
-    def normalize_seq(self, seq, n):
+    @classmethod
+    def normalize_seq(cls, seq, n):
         """helper method to normalize a probabilistic sequence, given the total number of entries per sequence location"""
         for pos in seq:
             for aa in pos.keys():
@@ -227,24 +226,21 @@ class Model:
         weight1 = (n1/float(n1 + n2))
         weight2 = (n2/float(n1 + n2))
         
-        seq1 = self.gen_seq()
-        seq2 = other.gen_seq()
-        
         for i in range(len(merged_seq)):
             #add in first model's weighted sequence info
-            for aa in seq1[i].keys():
-                merged_seq[i][aa] = seq1[i].get(aa)*weight1
+            for aa in self.seq[i].keys():
+                merged_seq[i][aa] = self.seq[i].get(aa)*weight1
             
             #add in the second model's weighted sequence info
-            for aa in seq2[i].keys():
+            for aa in other.seq[i].keys():
                 #if there's already an entry from the first model,
                 #just update the score
                 if merged_seq[i].has_key(aa):
-                    merged_seq[i][aa] += seq2[i].get(aa)*weight2
+                    merged_seq[i][aa] += other.seq[i].get(aa)*weight2
                 
                 #if it's a new amino acid, make a new entry
                 else:
-                    merged_seq[i][aa] = seq2[i].get(aa)*weight2
+                    merged_seq[i][aa] = other.seq[i].get(aa)*weight2
         
         return merged_seq
         
