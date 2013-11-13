@@ -75,7 +75,7 @@ class Model:
         sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
         oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
         
-        positions = [0]*len(m1.positions)
+        positions = []
         for i in range(len(m1.positions)):
             sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
             oPoint = oFrame.transformInto(otherPositions[i])
@@ -85,7 +85,8 @@ class Model:
 #                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
 #                                 })
 
-            positions[i] = Vec({'xyz'[i]: m1.positions[i].__dict__[c] + sqrt((sPoint[i] + oPoint[i]) * (sPoint[i] + oPoint[i])) for i in range(3)})
+            
+            positions.append(Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] + sqrt((sPoint[j] + oPoint[j]) * (sPoint[j] + oPoint[j])) for j in range(3)}))
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
