@@ -35,23 +35,16 @@ class Model:
     @classmethod
     def fromModels(cls, m1, m2):
         """Returns a Model representing a merge of m1 and m2"""
-        #find necessary vectors
-        
-        
         if m1.ssesSignature != m2.ssesSignature:
             return Exception("Loop SSE signature mismatch!")
         if len(m1.positions) != len(m2.positions):
             raise Exception("Loop length mismatch!")
 
+        #find necessary vectors
         sOffsetV = [m1.sses[1][0].__dict__[c] - m1.sses[0][0].__dict__[c] for c in 'xyz']
-#         sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
-#         sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
         sSSEV = Model.get_sse_vector(m1.sses[0], m1.positions[0])
         
         oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
-#         oOffsetV = [m2.positions[-1].__dict__[c] - m2.positions[0].__dict__[c] for c in 'xyz']
-#         oSSE0V = [m2.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[0]]) for c in 'xyz']
-#         oSSE1V = [m2.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[1]]) for c in 'xyz']
         oSSE0V = Model.get_sse_vector(m1.sses[0], m1.positions[0])
         oSSE1V = Model.get_sse_vector(m1.sses[1], m1.positions[-1])
         
@@ -80,14 +73,9 @@ class Model:
         for i in range(len(m1.positions)):
             sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
             oPoint = oFrame.transformInto(otherPositions[i])
-#             positions[i] = Vec({
-#                                 'x': sqrt((sPoint.x + oPoint.x) * (sPoint.x + oPoint.x)),
-#                                 'y': sqrt((sPoint.y + oPoint.y) * (sPoint.y + oPoint.y)),
-#                                 'z': sqrt((sPoint.z + oPoint.z) * (sPoint.z + oPoint.z))
-#                                 })
-            print("Transformed %s to %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(sPoint), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(oPoint)))
+#             print("Transformed %s to %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(sPoint), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(oPoint)))
             v = Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] - sPoint[j] + (sPoint[j] + oPoint[j]) / 2 for j in range(3)})
-            print "Merging %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(v))
+#             print "Merging %s and %s to %s" % (str(m1.positions[i] if type(m1.positions[i]) is Vec else Vec(m1.positions[i])), str(m2.positions[i] if type(m2.positions[i]) is Vec else Vec(m2.positions[i])), str(v))
             positions.append(v)
         
         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
