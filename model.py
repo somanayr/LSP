@@ -262,9 +262,10 @@ class Model:
         return merged_seq
         
     def __str__(self):
-        loops = []
-        self.get_loops(loops)
-        mean_displacement = self.seq
-        loops = []
-        self.get_loops(loops)
-        return ("Model %s%s" % (mean_displacement, "".join(["\n\t%s" % (loop) for loop in loops])))
+#         loops = []
+#         self.get_loops(loops)
+#         mean_displacement = self.seq
+#         loops = []
+#         self.get_loops(loops)
+        
+        return ("Model[\n\tsignature=%s\tloop_len=%d\tseq=%s\n]" % (str(self.ssesSignature), len(self.positions), str(self.seq)))
