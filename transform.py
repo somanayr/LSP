@@ -4,6 +4,7 @@ Created on Nov 9, 2013
 @author: ramos
 '''
 import numpy
+import math
 
 class Vec:
     def __init__(self, dict):
@@ -64,6 +65,11 @@ class TransformFrame:
         norm = numpy.linalg.norm(x)
         x = [c / norm for c in x]
         norm = numpy.linalg.norm(y)
+        print norm
+        if(math.isnan(norm) or norm == 0):
+            print y
+            print "ERROR! is nan or 0"
+            raise Exception("Is NaN or 0")
         y = [c / norm for c in y]
         z = numpy.cross(x, y)
         norm = numpy.linalg.norm(z)

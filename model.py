@@ -43,12 +43,13 @@ class Model:
         if len(m1.positions) != len(m2.positions):
             raise Exception("Loop length mismatch!")
 
-        sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
+        sOffsetV = [m1.sses[1][0].__dict__[c] - m1.sses[0][0].__dict__[c] for c in 'xyz']
+#         sOffsetV = [m1.positions[-1].__dict__[c] - m1.positions[0].__dict__[c] for c in 'xyz']
 #         sSSEV = [m1.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m1.sses[0]]) for c in 'xyz']
         sSSEV = Model.get_sse_vector(m1.sses[0], m1.positions[0])
         
-#         oOffsetV = [m2.sses[1][0][c] - m2.sses[0][0][c] for c in 'xyz']
-        oOffsetV = [m2.positions[-1].__dict__[c] - m2.positions[0].__dict__[c] for c in 'xyz']
+        oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
+#         oOffsetV = [m2.positions[-1].__dict__[c] - m2.positions[0].__dict__[c] for c in 'xyz']
 #         oSSE0V = [m2.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[0]]) for c in 'xyz']
 #         oSSE1V = [m2.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in m2.sses[1]]) for c in 'xyz']
         oSSE0V = Model.get_sse_vector(m1.sses[0], m1.positions[0])
@@ -146,18 +147,22 @@ class Model:
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
         print(self.sses)
-#         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
-        sOffsetV = [self.positions[-1].__dict__[c] - self.positions[0].__dict__[c] for c in 'xyz']
-        sSSE0V = [self.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[0]]) for c in 'xyz']
-        sSSE1V = [self.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[1]]) for c in 'xyz']
+        sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
+#         sOffsetV = [self.positions[-1].__dict__[c] - self.positions[0].__dict__[c] for c in 'xyz']
+#         sOffsetV = 
+#         print [self.positions[-1].__dict__[c] for c in 'xyz'], [self.positions[0].__dict__[c] for c in 'xyz']
+#         sSSE0V = [self.positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[0]]) for c in 'xyz']
+#         sSSE1V = [self.positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in self.sses[1]]) for c in 'xyz']
+        sSSE0V = Model.get_sse_vector(self.sses[0], self.positions[0])
+        sSSE1V = Model.get_sse_vector(self.sses[1], self.positions[-1]) 
 
         
-#         oOffsetV = [other_sses_1[0][c] - other_sses_0[0][c] for c in 'xyz']
-        oOffsetV = [other_positions[-1].__dict__[c] - other_positions[0].__dict__[c] for c in 'xyz']
-        oSSE0V = [other_positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_0]) for c in 'xyz']
-        oSSE1V = [other_positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_1]) for c in 'xyz']
-#         oSSE0V = Model.get_sse_vector(m1.sses[0], m1.positions[0])
-#         oSSE1V = Model.get_sse_vector(m1.sses[1], m1.positions[-1])
+        oOffsetV = [other_sses_1[0].__dict__[c] - other_sses_0[0].__dict__[c] for c in 'xyz']
+#         oOffsetV = [other_positions[-1].__dict__[c] - other_positions[0].__dict__[c] for c in 'xyz']
+#         oSSE0V = [other_positions[0].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_0]) for c in 'xyz']
+#         oSSE1V = [other_positions[-1].__dict__[c] - mean([atom.__dict__[c] for atom in other_sses_1]) for c in 'xyz']
+        oSSE0V = Model.get_sse_vector(other_sses_0, other_positions[0])
+        oSSE1V = Model.get_sse_vector(other_sses_1, other_positions[-1])
         
         sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
