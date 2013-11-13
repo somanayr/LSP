@@ -180,7 +180,7 @@ def hierarchical(models):
     
     #if we arrive at this point, then everything clustered together;
     #just return the overarching representative model in this case
-    return active_subtrees[0][1]
+    return [active_subtrees[0][1]]
 
 
 #helper function to convert a list of Models into a list
