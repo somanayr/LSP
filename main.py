@@ -3,7 +3,7 @@ Created on Oct 28, 2013
 '''
 from pdb_reader import get_loops
 #from cluster import cluster, hierarchical
-from cluster import length_cluster, hierarchical
+from cluster import length_cluster, sse_similarity_cluster, hierarchical
 from model import Model
 import os
 
@@ -15,17 +15,30 @@ def create_loop_bins(unordered_loops):
     """
     Given a list of loops, group loops into "bins" based on (1) size, and (2) flanking SSE types
     > NOTE: we currently require loops to be the exact same size if we are to compare them. 
-        [Yoon Joo told us to consider bins with ranges of lengths (1-3, 4-7, 8-12, etc.)]
+        [YoonJoo told us to consider bins with ranges of lengths (1-3, 4-7, 8-12, etc.)]
     > NOTE: flanking SSEs should be exactly the same when we compare loops.
      """
-    # Create length bins
+    # Create bins by loop length
     loop_bins_by_length = length_cluster(unordered_loops)
+
+    # Debug: (bins are currently only built only by loop size)
+#     for bin_id in loop_bins_by_length:
+#         print "Bin w/ Loops of Size:", bin_id
+#         for loop in loop_bins_by_length[bin_id]:
+#             print loop
+#     
+    # Create bins by using loop length info & discriminating between flanking SSEs
+    bins = sse_similarity_cluster(loop_bins_by_length)
+
+    # Debug: (bins are built by both loop size & flanking SSE)
+#     s = 0
+#     for bin in bins:
+#         print "Bin Length:", bin[0], " & Bin Type:", bin[1], " & # Loops:", len(bin[2])
+#         #print " > Loops:", [l. for l in bin[2]]
+#         s += len(bin[2])
+#         
+#     print "\nTotal Bins: " + str(len(bins)) + " - Total Loops: " + str(s)
     
-    # TODO: Create sub-bins by discriminating between flanking SSEs
-    #loop_bins_by_anchor_types = []
-
-    bins = loop_bins_by_length
-
     return bins
 
 def classify(in_sequence, predictive_model):
@@ -130,14 +143,20 @@ if __name__ == '__main__':
     ###########################################################################
     bins = create_loop_bins(loops)
     
-    # Test... (bins are built only by loop size)
-    for bin_id in bins:
-        print bin_id, bins[bin_id]
-    
     ###########################################################################
     # Use hierarchical clustering to form loop similarity clusters
+    # Note: loops are clustered within their individual bins. 
     ###########################################################################
-    #clusters = hierarchical(bins)
+    for bin in bins:
+        print "Bin:", (bin[0], bin[1], len(bin[2])) 
+        clusters = hierarchical(bin[2])
+
+        # Debug: Display the representative model(s) resulting from clustering
+        print "\n\n\n\n----Results----"
+        for model in clusters:
+            print model
+            
+        _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
     
     ###########################################################################
     # Classify - given an input (loop) sequence, match it to some loop cluster

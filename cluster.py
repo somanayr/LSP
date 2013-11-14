@@ -135,6 +135,66 @@ def length_cluster(loops):
     
     return clusters
 
+def sse_similarity_cluster(loops_by_size):
+    """
+    Given a cluster of loops (clustered by loop length), return clusters that:
+      (1) have the same length, AND
+      (2) have the same flanking SSEs.
+    
+    Note: loops_by_size is a dictionary where the KEY is an integer number representing the
+    size of loops in that cluster, and the VALUE is a list of those loops. This function
+    will return a a list of tuples with this form:
+
+                            ( loop_length, flank_type, [loops] )
+    
+    Where loop_length is as described above, flank_type is one of "HH", "HS", "SH", or "SS", and
+    the list of loops is in fact a list of the loops belonging to that "bin".
+    """
+    # Final container of all bins based on length & flanking SSEs
+    bins = []
+    
+    # For each loop length, create bins that discriminate on flanking SSE type
+    for bin_id in loops_by_size:
+
+        # Flanking SSE bins "Helix/Helix", "Helix/Sheet", "Sheet/Helix", "Sheet/Sheet"
+        HH = []
+        HS = []
+        SH = []
+        SS = []
+
+        # For a given loop length, look at all loops present in the bin and create new bins
+        # where we put loops with the same left/right SSE in the same bins        
+        for loop in loops_by_size[bin_id]:
+            
+            if loop.l_type[0] == "H" and loop.r_type[0] == "H":
+                HH.append(loop)
+            elif loop.l_type[0] == "H" and loop.r_type[0] == "S":
+                HS.append(loop)
+            elif loop.l_type[0] == "S" and loop.r_type[0] == "H":
+                SH.append(loop)
+            elif loop.l_type[0] == "S" and loop.r_type[0] == "S":
+                SS.append(loop)
+            else:
+                # This should be an error until we change the implementation
+                # to handle loops with None Type flanking SSEs (i.e. no left/right anchor)
+                # because it is the first/lasp "loop".
+                print "warning: didn't add loop to bin:", loop, "due to flanking SSE abnormality"
+        
+        # Only create a real bin if there are loops in the bin
+        if len(HH) > 0:
+            b = (bin_id, "HH", HH)
+            bins.append( b )
+        if len(HS) > 0:
+            b = (bin_id, "HS", HS)
+            bins.append( b )
+        if len(SH) > 0:
+            b = (bin_id, "SH", SH)
+            bins.append( b )
+        if len(SS) > 0:
+            b = (bin_id, "SS", SS)
+            bins.append( b )
+
+    return bins
 
 #given a list of loop Models, return a tree (nested lists)
 #encoding a hierarchical clustering of the models
