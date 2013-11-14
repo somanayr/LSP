@@ -2,13 +2,16 @@
 Created on Oct 28, 2013
 '''
 from pdb_reader import get_loops
-#from cluster import cluster, hierarchical
 from cluster import length_cluster, sse_similarity_cluster, hierarchical
 from model import Model
+from classify import classify_loop_seq
+from SubstitutionMatrix import blosum62
 import os
 
 def loop_extraction(pdb_dir, maxLoopCount=200):
     """Given a directory, locate PDB files and extract loops from each PDB file."""
+    # TODO: take code from main and make it a function so that main consists of
+    # primarily driver code (cleaner, simpler, shorter...).
     pass
 
 def create_loop_bins(unordered_loops):
@@ -41,13 +44,6 @@ def create_loop_bins(unordered_loops):
     
     return bins
 
-def classify(in_sequence, predictive_model):
-    """
-    Given an unknown (loop) sequence and a predictive model, determine which cluster
-    best represents the input sequence. 
-    """
-    pass
-
 if __name__ == '__main__':
 #     loops = get_loops("112L.pdb") + get_loops("1A7W.pdb") + get_loops("1B6W.pdb") + get_loops("1QlQ.pdb")
 #     print("----LOOPS----")
@@ -60,10 +56,13 @@ if __name__ == '__main__':
     # DEBUG FLAGS #
     ###############
     # Indicates whether or not to write extracted loop info to console
+    display_file_debug = True
+
+    # Indicates whether or not to write extracted loop info to console
     display_loop_debug = False
-    
+
     # Indicates whether or not to write Model representations of loops to console
-    display_loop_model_debug = True
+    display_loop_model_debug = False
         
     ###########################################################################
     # Initial loop extraction
@@ -77,7 +76,9 @@ if __name__ == '__main__':
         
         # If the file is in fact a PDB file, attempt to extract the Loop Structures
         if(f.endswith(".pdb")):
-            print "Loading loops from file: " + f + "..."
+            
+            if display_file_debug: 
+                print "Loading loops from file: " + f + "...";   
             
             # Get the loop candidates from a PDB file
             l_cand = get_loops("pdb/" + f)
@@ -113,27 +114,21 @@ if __name__ == '__main__':
                     loops.append(loop)
             
             # Debug: After each file, print the updated amount of loops
-            print " > Total Loops:", len(loops)
-            
+            if display_file_debug: 
+                print " > Total Loops:", len(loops)
+
             # ? (why would we break after finding 200-ish loops?)
             if(len(loops) >= 200): break
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
-#     if display_loop_model_debug:
-#         print "\nModel Representations for Loop Structures:"
-#         loop_num = 1
-#         for loop in loops:
-#             model = Model.fromLoop(loop)
-#             print loop_num, ":", "<" + str(model.get_loops()) + ">" , model
-#             loop_num += 1
+    if display_loop_model_debug:
+        print "\nModel Representations for Loop Structures:"
+        loop_num = 1
+        for loop in loops:
+            model = Model.fromLoop(loop)
+            print loop_num, ":", "<" + str(model.get_loops()) + ">" , model
+            loop_num += 1
 
-# Ryan:        
-#    results = hierarchical(loops)
-#        
-#    print "\n\n\n\n----Results----"
-#    for model in results:
-#        print model
-#        
 
     ###########################################################################
     # "Bin up" Loop Structures (their Models, now...) by:
@@ -147,23 +142,49 @@ if __name__ == '__main__':
     # Use hierarchical clustering to form loop similarity clusters
     # Note: loops are clustered within their individual bins. 
     ###########################################################################
+    
+    # Bin_Clusters is a list of tubles where the first element is the bin tuple
+    # and the second element is the clusters returned from hierarchical clustering.
+    bin_clusters = []
     for bin in bins:
-        print "Bin:", (bin[0], bin[1], len(bin[2])) 
+        #print "Bin:", (bin[0], bin[1], len(bin[2])) 
         clusters = hierarchical(bin[2])
+        bin_clusters.append((bin, clusters))
 
-        # Debug: Display the representative model(s) resulting from clustering
-        print "\n\n\n\n----Results----"
-        for model in clusters:
-            print model
-            
-        _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
+#         # Debug: Display the representative model(s) resulting from clustering
+#         print "\n\n\n\n----Results----"
+#         for model in clusters:
+#             print model
+# 
+#         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
     
     ###########################################################################
     # Classify - given an input (loop) sequence, match it to some loop cluster
     # or inform user that the loop cannot be characterized
     ###########################################################################
+    test_seq = "NGEMFT"
+    print "> Input Sequence:", test_seq, "with length:", len(test_seq)
     
-    
+    # First, eliminate bins that don't have sequences with the same length as
+    # the input sequence.
+    valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
+
+    # Now use the valid clusters to attempt to classify the input sequence.
+    prediction_scores = []
+    for bc in valid_bin_clusters:
+        prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
+
+    ## Display results #################################################################
+    sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
+    TOP_SCORES = 5
+    for modelNum, model in enumerate(prediction_scores):
+        print "Model Score:", model[1], "\n", model[0]
+        
+        # Only display a total of TOP_SCORES of the best models/scores
+        if modelNum >= TOP_SCORES-1: break
+        
+    ####################################################################################
+   
     ###########################################################################
     # Cross-Validation - input known loop sequences and determine how 
     # successfully we can map the loop sequence back to the correct
