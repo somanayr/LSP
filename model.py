@@ -95,7 +95,7 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other):
+    def compare(self, other, max_rmsd=2):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -109,14 +109,14 @@ class Model:
         
         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
             #Try both, return the best
-            return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions),
-                       self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)]))
+            return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
+                       self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)], max_rmsd))
         else:
             return self.__compute_scores(other.sses[0], other.sses[1], other.positions)
         
         
         
-    def __compute_scores(self, other_sses_0, other_sses_1, other_positions):
+    def __compute_scores(self, other_sses_0, other_sses_1, other_positions, max_rmsd=2):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
@@ -139,7 +139,7 @@ class Model:
             total += rmsd(sPoint, oPoint)
         total /= len(self.positions)
         
-        if(total > 2): #must be at most 2 angstroms apart
+        if(max_rmsd > 0 and total > max_rmsd): #must be at most 2 angstroms apart
             return float('inf')
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
