@@ -190,8 +190,8 @@ if __name__ == '__main__':
     
     ##Naive testing - check if a loop gets placed into it's model
     total_score = 0
-    total_clusters = len(valid_bin_clusters)
-    for bc in valid_bin_clusters:
+    total_clusters = len(bin_clusters)
+    for bc in bin_clusters:
         bin_data, models = bc
         
         #Find loops
@@ -200,6 +200,7 @@ if __name__ == '__main__':
             temp_loops = []
             model.get_loops(temp_loops)
             if(len(temp_loops) > 2): #reject exact and close to exact matches, why test what we know is going to hit 100%?
+#             if(True):
                 loop_set += temp_loops
         
         #Quit if we didn't find any suitable loops
