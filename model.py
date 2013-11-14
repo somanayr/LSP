@@ -29,8 +29,8 @@ class Model:
     @classmethod
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
-        sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        return Model([loop], loop.atoms, [sses[0][1], sses[1][1]], [sses[0][0], sses[1][0]], Model.__gen_seq([loop.seq]), 1)
+#         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
+        return Model([loop], loop.atoms, [loop.l_anchor, loop.r_anchor], [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]), 1)
         
     @classmethod
     def fromModels(cls, m1, m2):
@@ -46,7 +46,7 @@ class Model:
         
         oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
         oSSE0V = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
-        oSSE1V = Model.__get_sse_vector(m1.sses[1], m1.positions[-1])
+#         oSSE1V = Model.__get_sse_vector(m1.sses[1], m1.positions[-1])
         
         oSSEV = oSSE0V
         
@@ -55,19 +55,19 @@ class Model:
         
         otherPositions = m2.positions
         
-        if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
-            scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
-            revPos = [k for k in reversed(m2.positions)]
-            scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
-            
-            #if we get a better score with the reversed orientation, flip the orientation
-            if(scoreReversed < scoreNormal):
-                otherPositions = revPos
-                oSSEV = oSSE1V
-                oOffsetV = negative(oOffsetV)
-                oOrigin = m2.sses[1][0]
-                
-            revPos = None #clear the memory
+#         if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
+#             scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
+#             revPos = [k for k in reversed(m2.positions)]
+#             scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
+#             
+#             #if we get a better score with the reversed orientation, flip the orientation
+#             if(scoreReversed < scoreNormal):
+#                 otherPositions = revPos
+#                 oSSEV = oSSE1V
+#                 oOffsetV = negative(oOffsetV)
+#                 oOrigin = m2.sses[1][0]
+#                 
+#             revPos = None #clear the memory
         
         sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
         oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
@@ -107,12 +107,14 @@ class Model:
         if len(self.positions) != len(other.positions):
             return float('inf')
         
-        if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
-            #Try both, return the best
-            return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
-                       self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)], max_rmsd))
-        else:
-            return self.__compute_scores(other.sses[0], other.sses[1], other.positions)
+#         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
+#             #Try both, return the best
+#             return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
+#                        self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)], max_rmsd))
+#         else:
+
+
+        return self.__compute_scores(other.sses[0], other.sses[1], other.positions)
         
         
         
@@ -132,14 +134,14 @@ class Model:
         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
         
         #Average RMSD
-        total = 0
+        avg_rmsd = 0
         for i in range(len(self.positions)):
             sPoint = sFrame.transformInto(self.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
             oPoint = oFrame.transformInto(other_positions[i])
-            total += rmsd(sPoint, oPoint)
-        total /= len(self.positions)
+            avg_rmsd += rmsd(sPoint, oPoint)
+        avg_rmsd /= len(self.positions)
         
-        if(max_rmsd > 0 and total > max_rmsd): #must be at most 2 angstroms apart
+        if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             return float('inf')
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
@@ -155,7 +157,7 @@ class Model:
         #Using eculdian distance... is there a better way to do this?
         #I figure anchor d is the biggest value, and that's the one we want weighted the most heavily
         #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
-        return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + total;
+        return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + avg_rmsd;
     
     def get_loops(self, loops):
         """Finds loops from this and all parent sequences and dumps them into loops. Lazy loads loops"""

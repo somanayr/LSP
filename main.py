@@ -215,16 +215,21 @@ if __name__ == '__main__':
             tries = 1 #start at 1 so no div by zero stuff
             
             #Iterate until we find the match
-            for score in scores:
-                temp_loop_set = []
-                score[0].get_loops(temp_loop_set)
-                if loop in temp_loop_set: #is match
-#                     print "Success after %d tries" % (tries)
-                    break
-                tries+=1
-            
-            #Higher score is better!
-            cluster_score += 1.0/tries
+#             for score in scores:
+#                 temp_loop_set = []
+#                 score[0].get_loops(temp_loop_set)
+#                 if loop in temp_loop_set: #is match
+# #                     print "Success after %d tries" % (tries)
+#                     break 
+#                 tries+=1
+#             
+#             #Higher score is better!
+#             cluster_score += 1.0/tries
+
+            temp_loop_set = []
+            scores[0][0].get_loops(temp_loop_set)
+            if loop in temp_loop_set:
+                cluster_score += 1.0
         cluster_score /= len(loop_set)
         print "Cluster score on bin %s, %d: %f (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_score, len(models), len(loop_set))
         
