@@ -81,7 +81,10 @@ if __name__ == '__main__':
                 print "Loading loops from file: " + f + "...";   
             
             # Get the loop candidates from a PDB file
-            l_cand = get_loops("pdb/" + f)
+            try:
+                l_cand = get_loops("pdb/" + f)
+            except:
+                continue
 
             # Check each extract loop and determine if it is a valid loop (i.e. has left/right anchor)            
             for loop in l_cand:
@@ -118,7 +121,7 @@ if __name__ == '__main__':
                 print " > Total Loops:", len(loops)
 
             # ? (why would we break after finding 200-ish loops?)
-            if(len(loops) >= 200): break
+#             if(len(loops) >= 200): break
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
     if display_loop_model_debug:
@@ -184,6 +187,50 @@ if __name__ == '__main__':
         if modelNum >= TOP_SCORES-1: break
         
     ####################################################################################
+    
+    ##Naive testing - check if a loop gets placed into it's model
+    total_score = 0
+    total_clusters = len(valid_bin_clusters)
+    for bc in valid_bin_clusters:
+        bin_data, models = bc
+        
+        #Find loops
+        loop_set = []
+        for model in models:
+            temp_loops = []
+            model.get_loops(temp_loops)
+            if(len(temp_loops) > 2): #reject exact and close to exact matches, why test what we know is going to hit 100%?
+                loop_set += temp_loops
+        
+        #Quit if we didn't find any suitable loops
+        if(len(loop_set) == 0):
+            total_clusters -= 1
+            continue
+        
+        cluster_score = 0
+        for loop in loop_set:
+            scores = classify_loop_seq(loop.seq, models, blosum62)
+            scores = sorted(scores, key=lambda x:-x[1])
+            tries = 1 #start at 1 so no div by zero stuff
+            
+            #Iterate until we find the match
+            for score in scores:
+                temp_loop_set = []
+                score[0].get_loops(temp_loop_set)
+                if loop in temp_loop_set: #is match
+#                     print "Success after %d tries" % (tries)
+                    break
+                tries+=1
+            
+            #Higher score is better!
+            cluster_score += 1.0/tries
+        cluster_score /= len(loop_set)
+        print "Cluster score on bin %s, %d: %f (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_score, len(models), len(loop_set))
+        
+        total_score += cluster_score
+    
+    total_score /= total_clusters
+    print("Total score: %f" % total_score)
    
     ###########################################################################
     # Cross-Validation - input known loop sequences and determine how 

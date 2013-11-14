@@ -167,7 +167,7 @@ class Model:
                 self.parents[0].get_loops(l)
                 self.parents[1].get_loops(l)
             self.__loops = l
-        loops += self.__loops        
+        loops += self.__loops
    
     @classmethod
     def __gen_seq(cls, loops):
