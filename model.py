@@ -80,7 +80,7 @@ class Model:
             oPoint = oFrame.transformInto(otherPositions[i])
             
             #Position is m1.positions[i] - sPoint + (sPoint + oPoint) / 2, in other words, the average, displaced back to the position of m1
-            v = Vec({'xyz'[j]: m1.positions[i].__dict__['xyz'[j]] - sPoint[j] + (sPoint[j] + oPoint[j]) / 2 for j in range(3)})
+            v = Vec.from_array(sFrame.transformOutOf(Vec({'xyz'[j]: (sPoint[j] + oPoint[j]) / 2 for j in range(3)})))
             
             positions.append(v)
         
