@@ -44,13 +44,81 @@ def create_loop_bins(unordered_loops):
     
     return bins
 
+
+    
+def compute_score_naive(bin_clusters, first_only=True):
+##Naive testing - check if a loop gets placed into it's model
+    total_model_score = 0
+    total_structure_score = 0
+    total_clusters = len(bin_clusters)
+    for bc in bin_clusters:
+        bin_data, models = bc
+        
+        #Find loops
+        loop_set = []
+        for model in models:
+            temp_loops = []
+            model.get_loops(temp_loops)
+            if(len(temp_loops) > 2): #reject exact and close to exact matches, why test what we know is going to hit 100%?
+#             if(True):
+                loop_set += temp_loops
+        
+        #Quit if we didn't find any suitable loops
+        if(len(loop_set) == 0):
+            total_clusters -= 1
+            continue
+        
+        cluster_model_score = 0
+        cluster_structure_score = 0
+        for loop in loop_set:
+            scores = classify_loop_seq(loop.seq, models, blosum62)
+            scores = sorted(scores, key=lambda x:-x[1])
+            model = Model.fromLoop(loop)
+            
+            #compute model score
+            if not first_only:
+                structure_score = 0.0
+                tries = 0 #start at 1 so no div by zero stuff
+                
+                #Iterate until we find the match
+                for score in scores:
+                    temp_loop_set = []
+                    score[0].get_loops(temp_loop_set)
+                    if loop in temp_loop_set: #is match
+                        break 
+                    structure_score += score[0].compare(model, max_rmsd=-1, verbose=True)
+                    tries+=1
+                 
+                #Higher score is better!
+                model_score = (len(scores) - tries) / (len(scores) + 0.0)
+            else:
+                temp_loop_set = []
+                scores[0][0].get_loops(temp_loop_set)
+                model_score = 0.0
+                structure_score = 0.0
+                if loop in temp_loop_set:
+                    model_score = 1.0
+                    structure_score = - (1/scores[0][0].compare(model, max_rmsd=-1, verbose=True))
+            
+            
+            print "Loop score: (%f, %f)" % (model_score, structure_score)
+                    
+            cluster_model_score += model_score
+            cluster_structure_score += structure_score
+        cluster_model_score /= len(loop_set)
+        cluster_structure_score /= len(loop_set)
+        print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
+        
+        total_model_score += cluster_model_score
+        total_structure_score += cluster_structure_score
+    
+    total_model_score /= total_clusters
+    total_structure_score /= total_clusters
+    print("Total score: (%f, %f)" % (total_model_score, total_structure_score))
+    
+
 if __name__ == '__main__':
-#     loops = get_loops("112L.pdb") + get_loops("1A7W.pdb") + get_loops("1B6W.pdb") + get_loops("1QlQ.pdb")
-#     print("----LOOPS----")
-#     print("\n".join([str(loop) for loop in loops]))
-#     centroids = cluster(loops)
-#     print("\n----MODELS----")
-#     print("\n".join([str(centroid) for centroid in centroids]))
+    LIMIT = 500
 
     ###############
     # DEBUG FLAGS #
@@ -121,7 +189,7 @@ if __name__ == '__main__':
                 print " > Total Loops:", len(loops)
 
             # ? (why would we break after finding 200-ish loops?)
-#             if(len(loops) >= 200): break
+            if(LIMIT >= 0 and len(loops) >= LIMIT): break
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
     if display_loop_model_debug:
@@ -185,58 +253,11 @@ if __name__ == '__main__':
         
         # Only display a total of TOP_SCORES of the best models/scores
         if modelNum >= TOP_SCORES-1: break
-        
+
+
+    compute_score_naive(bin_clusters)        
     ####################################################################################
     
-    ##Naive testing - check if a loop gets placed into it's model
-    total_score = 0
-    total_clusters = len(bin_clusters)
-    for bc in bin_clusters:
-        bin_data, models = bc
-        
-        #Find loops
-        loop_set = []
-        for model in models:
-            temp_loops = []
-            model.get_loops(temp_loops)
-            if(len(temp_loops) > 2): #reject exact and close to exact matches, why test what we know is going to hit 100%?
-#             if(True):
-                loop_set += temp_loops
-        
-        #Quit if we didn't find any suitable loops
-        if(len(loop_set) == 0):
-            total_clusters -= 1
-            continue
-        
-        cluster_score = 0
-        for loop in loop_set:
-            scores = classify_loop_seq(loop.seq, models, blosum62)
-            scores = sorted(scores, key=lambda x:-x[1])
-            tries = 1 #start at 1 so no div by zero stuff
-            
-            #Iterate until we find the match
-#             for score in scores:
-#                 temp_loop_set = []
-#                 score[0].get_loops(temp_loop_set)
-#                 if loop in temp_loop_set: #is match
-# #                     print "Success after %d tries" % (tries)
-#                     break 
-#                 tries+=1
-#             
-#             #Higher score is better!
-#             cluster_score += 1.0/tries
-
-            temp_loop_set = []
-            scores[0][0].get_loops(temp_loop_set)
-            if loop in temp_loop_set:
-                cluster_score += 1.0
-        cluster_score /= len(loop_set)
-        print "Cluster score on bin %s, %d: %f (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_score, len(models), len(loop_set))
-        
-        total_score += cluster_score
-    
-    total_score /= total_clusters
-    print("Total score: %f" % total_score)
    
     ###########################################################################
     # Cross-Validation - input known loop sequences and determine how 

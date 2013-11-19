@@ -95,7 +95,7 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other, max_rmsd=2):
+    def compare(self, other, max_rmsd=2, verbose=False):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -103,8 +103,10 @@ class Model:
         """
         #check validity
         if self.ssesSignature != other.ssesSignature:
+            print "SSE signature mistmatch!"
             return float('inf')
         if len(self.positions) != len(other.positions):
+            print "Position size mismatch!"
             return float('inf')
         
 #         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
@@ -114,11 +116,11 @@ class Model:
 #         else:
 
 
-        return self.__compute_scores(other.sses[0], other.sses[1], other.positions)
+        return self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd=max_rmsd, verbose=verbose)
         
         
         
-    def __compute_scores(self, other_sses_0, other_sses_1, other_positions, max_rmsd=2):
+    def __compute_scores(self, other_sses_0, other_sses_1, other_positions, max_rmsd=2, verbose=False):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
@@ -142,6 +144,7 @@ class Model:
         avg_rmsd /= len(self.positions)
         
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
+            if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
             return float('inf')
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
