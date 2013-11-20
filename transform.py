@@ -1,13 +1,15 @@
 '''
 Created on Nov 9, 2013
 
-@author: ramos
+@author: Ryan Amos
 '''
 import numpy
 import math
 
 class Vec:
+    """Represents a 3d vector. Has components x,yz"""
     def __init__(self, d):
+        """Creates a Vec from a dictionary of {'x': x, 'y': y, 'z': z}"""
         if(not isinstance(d, dict)):
             d = d.__dict__
         self.x = d['x']
@@ -19,6 +21,7 @@ class Vec:
     
     @classmethod
     def from_array(cls, ar):
+        """Generates a Vector from an array [x,y,z]"""
         dict = {}
         dict["x"] = ar[0]
         dict["y"] = ar[1]
@@ -70,7 +73,6 @@ class TransformFrame:
         norm = numpy.linalg.norm(x)
         x = [c / norm for c in x]
         norm = numpy.linalg.norm(y)
-#         print norm
         if(math.isnan(norm) or norm == 0):
             print y
             print "ERROR! is nan or 0"
@@ -106,6 +108,10 @@ identity_frame = TransformFrame.createFromVectors(Vec({
 def strVecArray(vecArray):
     return ("(%s,%s,%s)" % (str(vecArray[0]), str(vecArray[1]), str(vecArray[2])))
     
+    
+############################################
+"""Debug code"""
+
 if __name__ == "__main__":
     xVec = Vec({
              "x": 1.1,
@@ -127,11 +133,6 @@ if __name__ == "__main__":
              "y": 1,
              "z": 0
              })
-#     zVec = {
-#             "x": 0,
-#             "y": 0,
-#             "z": 1
-#             }
     origin = Vec({
               "x": 0,
               "y": 0,

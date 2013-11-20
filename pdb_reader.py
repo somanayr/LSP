@@ -3,6 +3,7 @@ from string import lower
 from Bio.PDB.DSSP import dssp_dict_from_pdb_file
 import sys
 import os
+from protein_structure import SSE, Atom, Loop
 
 # A minimum number of consecutive residues must have the same sse_code
 # in order for a group of residues to be declared a HELIX or SHEET.
@@ -30,69 +31,6 @@ AA_MAP = { 'ala' : 'A',
            'val' : 'V', 
            'trp' : 'W', 
            'tyr' : 'Y'}
-
-class Atom:
-    """
-    An atom from a pdb file: residue number, residue type, atom type, and x,y,z coordinates.
-    @author: CBK
-    """
-    def __init__(self, resnum, restype, atomtype, x, y, z):
-        self.resnum=resnum; 
-        self.restype=restype; 
-        self.atomtype=atomtype
-        self.x=x; self.y=y; self.z=z
-
-    def __str__(self): 
-        return self.restype+str(self.resnum)+'_'+self.atomtype
-
-    def dist(self, a2):
-        """Euclidean distance between self and atom a2."""
-        if self.x==None or a2.x==None: return None
-        return sqrt((self.x-a2.x)*(self.x-a2.x)+(self.y-a2.y)*(self.y-a2.y)+(self.z-a2.z)*(self.z-a2.z))
-
-class SSE:
-    """
-    A secondary structure element from a PDB file: HELIX or SHEET type, and start and end residue numbers.
-    @author: CBK
-    """
-    def __init__(self, ssetype, start, end):
-        self.type=ssetype; self.start=start; self.end=end
-
-    def __str__(self):
-        return self.type + str(self.start) + '-' + str(self.end)
-
-class Loop:
-    """A loop structure element from a PDB file: seq, atoms, start and end residue numbers."""
-    def __init__(self, seq, atoms, start, end, l_anchor=None, r_anchor=None):
-        self.start = start
-        self.end = end
-        self.seq = seq
-        self.atoms = atoms
-        self.l_anchor = l_anchor[0] # list of CAs
-        self.l_type = l_anchor[1]   # type of l_anchor SSE
-        self.r_anchor = r_anchor[0] # list of CAs
-        self.r_type = r_anchor[1]   # type of r_anchor SSE
-        
-    def __str__(self):
-        # Left anchor(s)
-        la_str = ""
-        if len(self.l_anchor) > 0:
-            for a in self.l_anchor:
-                la_str += str(a) + ","
-            la_str = la_str[0:-1]
-        else:
-            la_str = "-"
-
-        # Right anchor(s)
-        ra_str = ""
-        if len(self.r_anchor) > 0:
-            for a in self.r_anchor:
-                ra_str += str(a) + ","
-            ra_str = ra_str[0:-1]
-        else:
-            ra_str = "-"
-
-        return "Loop" + str(self.start) + "-" + str(self.end) + ", Anchors[" + la_str + " # " + ra_str + "], Types" + str((self.l_type,self.r_type))
 
 def read_pdb(filename):
     """
@@ -144,6 +82,19 @@ def dssp_sse_extract_from_pdb(filename):
     """
     Construct a list of SSEs from an un-annotated PDB file.
     @author: Travis Peters
+    
+    # Test... ##################################
+    #aa_type = dssp[0][key][0]
+    #sse_code = dssp[0][key][1]        
+    #x = float(dssp[0][key][2])
+    #y = float(dssp[0][key][3])
+    #z = float(dssp[0][key][4])
+
+    #print(str(key) + ":" + str(dssp[0][key]))
+    #print "  AA Type  = " + str(aa_type),
+    #print "\n  SSE Code = " + str(sse_code),
+    #print "\n  Location = " + str((x,y,z))
+    ############################################
     """
 
     # Assumes dssp executable is located in root of project directory
@@ -217,19 +168,6 @@ def dssp_sse_extract_from_pdb(filename):
             res_count = 0
             sse_start = resnum
             sse_type = None
-
-        # Test... ##################################
-        #aa_type = dssp[0][key][0]
-        #sse_code = dssp[0][key][1]        
-        #x = float(dssp[0][key][2])
-        #y = float(dssp[0][key][3])
-        #z = float(dssp[0][key][4])
-
-        #print(str(key) + ":" + str(dssp[0][key]))
-        #print "  AA Type  = " + str(aa_type),
-        #print "\n  SSE Code = " + str(sse_code),
-        #print "\n  Location = " + str((x,y,z))
-        ############################################
             
     return sses
 
