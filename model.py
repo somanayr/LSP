@@ -108,7 +108,7 @@ class Model:
         if len(self.positions) != len(other.positions):
             print "Position size mismatch!"
             return float('inf')
-        
+        2
 #         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
 #             #Try both, return the best
 #             return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
