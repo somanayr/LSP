@@ -95,10 +95,9 @@ def compute_score_naive(bin_clusters, first_only=True):
                 temp_loop_set = []
                 scores[0][0].get_loops(temp_loop_set)
                 model_score = 0.0
-                structure_score = 0.0
+                structure_score = - (1/scores[0][0].compare(model, max_rmsd=-1, verbose=True))
                 if loop in temp_loop_set:
                     model_score = 1.0
-                    structure_score = - (1/scores[0][0].compare(model, max_rmsd=-1, verbose=True))
             
             
             print "Loop score: (%f, %f)" % (model_score, structure_score)

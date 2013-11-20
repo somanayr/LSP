@@ -1,6 +1,6 @@
 TODO
 
-Run trace back to where it came from on MOAR data -- might not have enough loops in each bin (5k loops?)
+Run trace back to where it came from on MOAR data -- might not have enough loops in each bin (5k loops? 5k files (will be ~62k loops)? what do we want to limit by?)
 Histogram - x is model.size, y is # models
 X-Val - n folds -- how close is the structure to the first predicted structure?
 	Todo: (low priority) how close to the second? third? how to weight it?!
@@ -40,3 +40,23 @@ Supplementary information
 				Model presentation
 Feature vector - merge 3d structure, anchor angle, anchor dist, frame --- weighting feature vectors by size of the models
 Play with search parameters (RMSD? limit loop length 7-9)
+
+
+Assignments:
+	Serena
+		Start writing intro/bg
+		Write clustering methods
+	Ryan
+		Feature vector
+		Different weights for feature comparison
+		Histograms/other viz
+		Visualize
+		Limit loop lengths
+		Limit file input count
+		Run it!
+		Write model merge/structure compare
+		Write model representation
+		Upload ALL of the soluble proteins
+	Travis
+		N-fold x-val
+		Write Classification
