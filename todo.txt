@@ -1,0 +1,42 @@
+TODO
+
+Run trace back to where it came from on MOAR data -- might not have enough loops in each bin (5k loops?)
+Histogram - x is model.size, y is # models
+X-Val - n folds -- how close is the structure to the first predicted structure?
+	Todo: (low priority) how close to the second? third? how to weight it?!
+Different weights for structure comparison
+Paper writing!
+	Intro/background
+	Methods
+		Data reading
+		Preprocessing
+		Model represenation
+		Clustering
+			Model merging
+			Structure comparison
+		Classification
+			Seq matching/Model prediction
+	Results
+		Discussion of inputs and tests we ran
+			quick desc of trace-back/model-validation
+			x-val
+		Tables and figures
+		Visualizating a loop model
+			Put loop into PDB, visualize with your favorite pdb viz
+	Conclusion and future directions
+		Where to go
+		Sources of error
+		Yoonjoo - similar/different
+		Increasing accuracy? Improving on prediction?
+	
+Supplementary information
+	User experience
+		Running the software
+			Input
+				Training input
+				Prediction input
+			Output
+				Training output
+				Model presentation
+Feature vector - merge 3d structure, anchor angle, anchor dist, frame --- weighting feature vectors by size of the models
+Play with search parameters (RMSD? limit loop length 7-9)
