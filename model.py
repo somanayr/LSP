@@ -1,16 +1,12 @@
 '''
 Created on Oct 28, 2013
 '''
-import numpy
-from numpy.matrixlib.defmatrix import matrix
-from numpy.core.fromnumeric import mean
 from numpy.core.numeric import dot
 from numpy.dual import norm
 from transform import TransformFrame, Vec
-from loop import rmsd
-from numpy.lib.scimath import arccos, sqrt
+from protein_structure import rmsd
+from numpy.lib.scimath import arccos
 import transform
-import sys
 from numpy.ma.core import negative
 
 class Model:

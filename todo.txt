@@ -50,9 +50,11 @@ Assignments:
 		Feature vector
 		Different weights for feature comparison
 		Histograms/other viz
+			X code
+			create
 		Visualize
-		Limit loop lengths
-		Limit file input count
+		X Limit loop lengths
+		X Limit file input count
 		Run it!
 		Write model merge/structure compare
 		Write model representation

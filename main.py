@@ -45,6 +45,19 @@ def create_loop_bins(unordered_loops):
     return bins
 
 
+def generate_histogram_data(bin_clusters):
+    data = {}
+    for bc in bin_clusters:
+        for model in bc[1]:
+            if not model.size in data:
+                data[model.size] = 0
+            data[model.size] += 1
+            
+    for key in sorted(data.keys()):
+        print(str(key) + "\t" + str(data[key]))
+        
+            
+
     
 def compute_score_naive(bin_clusters, first_only=True):
 ##Naive testing - check if a loop gets placed into it's model
@@ -117,7 +130,9 @@ def compute_score_naive(bin_clusters, first_only=True):
     
 
 if __name__ == '__main__':
-    LIMIT = 500
+    LOOP_LIMIT = -1
+    FILE_LIMIT = 500
+    files = 0
 
     ###############
     # DEBUG FLAGS #
@@ -180,7 +195,7 @@ if __name__ == '__main__':
 
                 # If both the left & right anchor exist, we will consider this loop to be
                 # a valid Loop Structure (i.e. this loop is not an "end point")
-                if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1):
+                if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1) and not (len(loop.atoms) < 7 or len(loop.atoms) > 9):
                     loops.append(loop)
             
             # Debug: After each file, print the updated amount of loops
@@ -188,7 +203,10 @@ if __name__ == '__main__':
                 print " > Total Loops:", len(loops)
 
             # ? (why would we break after finding 200-ish loops?)
-            if(LIMIT >= 0 and len(loops) >= LIMIT): break
+            if(LOOP_LIMIT >= 0 and len(loops) >= LOOP_LIMIT): break
+
+            files += 1
+            if(FILE_LIMIT >= 0 and files >= FILE_LIMIT): break
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
     if display_loop_model_debug:
@@ -254,6 +272,7 @@ if __name__ == '__main__':
         if modelNum >= TOP_SCORES-1: break
 
 
+    generate_histogram_data(bin_clusters)
     compute_score_naive(bin_clusters)        
     ####################################################################################
     
