@@ -30,6 +30,17 @@ class Vec:
     
     def __repr__(self):
         return self.__str__()
+    
+    def __add__(self, other):
+        return Vec({'x': self.x + other.x, 'y': self.y + other.y, 'z': self.z + other.z})
+    
+    def __mul__(self, other):
+        if isinstance(other, Vec):
+            return Vec({'x': self.x * other.x, 'y': self.y * other.y, 'z': self.z * other.z})
+        elif isinstance(other, (int, long, float, complex)):
+            return Vec({'x': self.x * other, 'y': self.x * other, 'z': self.z * other})
+        else:
+            return NotImplemented
 
 RET_MODE_VECTOR = 0
 RET_MODE_ARRAY = 1
@@ -41,7 +52,7 @@ class TransformFrame:
         self.x = x
         self.y = y
         self.z = z
-        self.retMode = RET_MODE_ARRAY
+        self.ret_mode = RET_MODE_ARRAY
     
     def transformOutOf(self, point):
         """Algorithm taken from Dartmouth class CS77 framework code by Jonathan Denning, http://www.cs.dartmouth.edu/~cs77/assignments/assignment02.zip"""
@@ -49,7 +60,7 @@ class TransformFrame:
         b = [point.y * c for c in self.y]
         c = [point.z * c for c in self.z]
         
-        if(self.retMode == RET_MODE_VECTOR):
+        if(self.ret_mode == RET_MODE_VECTOR):
             return Vec({'xyz'[i]: self.o[i] + a[i] + b[i] + c[i] for i in range(3)})
         else:
             return [self.o[i] + a[i] + b[i] + c[i] for i in range(3)]
@@ -57,7 +68,7 @@ class TransformFrame:
     def transformInto(self, point):
         """Algorithm taken from Dartmouth class CS77 framework code by Jonathan Denning, http://www.cs.dartmouth.edu/~cs77/assignments/assignment02.zip"""
         translated = [point.__dict__['xyz'[i]] - self.o[i] for i in range(3)]
-        if(self.retMode == RET_MODE_VECTOR):
+        if(self.ret_mode == RET_MODE_VECTOR):
             return Vec({c: numpy.dot(translated, self.__dict__[c]) for c in 'xyz'})
         else:
             return [numpy.dot(translated, self.__dict__[c]) for c in 'xyz']

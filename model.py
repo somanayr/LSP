@@ -10,77 +10,134 @@ import transform
 from numpy.ma.core import negative
 
 class Model:
-    def __init__(self, parents, positions, sses, ssesSignature, seq, size):
-        '''
-        Generates a model from list of similar loops, loops
-        '''
+#     def __init__(self, parents, positions, sses, ssesSignature, seq, size):
+#         '''
+#         Generates a model from list of similar loops, loops
+#         '''
+#         self.parents = parents
+#         self.positions = positions
+#         self.sses = sses
+#         self.ssesSignature = ssesSignature
+#         self.seq = seq
+#         self.size = size
+#         self.__loops = None #lazy loaded, not safe to call, use get_loops instead
+#         
+
+    def __init__(self, parents, positions, theta, phi, anchor_dist, frame, sseSignature, seq, size):
         self.parents = parents
         self.positions = positions
-        self.sses = sses
-        self.ssesSignature = ssesSignature
+        self.theta = theta
+        self.phi = phi
+        self.anchor_dist = anchor_dist
+        self.frame = frame
+        self.sseSignature = sseSignature
         self.seq = seq
         self.size = size
-        self.__loops = None #lazy loaded, not safe to call, use get_loops instead
-        
+
     @classmethod
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
+        #get necessary vectors
+        sOffsetV = [loop.r_anchor[0].__dict__[c] - loop.l_anchor[0].__dict__[c] for c in 'xyz']
+        sSSE0V = Model.__get_sse_vector(loop.l_anchor, loop.atoms[0])
+        sSSE1V = Model.__get_sse_vector(loop.r_anchor, loop.atoms[-1]) 
+
+        
+        sFrame = TransformFrame.createFromVectors(loop.l_anchor[0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
+        
+        #Theta and phi are the angles between the SSE and anchor-anchor vector
+        s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
+        s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
+        
+        s_anchor_d = norm(sOffsetV)
+        
+        return Model([loop], loop.atoms, s_theta, s_phi, s_anchor_d, sFrame, [loop.l_type, loop.r_type], Model.__gen_seq([loop]) , 1)
+
+        
 #         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-        return Model([loop], loop.atoms, [loop.l_anchor, loop.r_anchor], [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]), 1)
+#         return Model([loop], loop.atoms, [loop.l_anchor, loop.r_anchor], [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]), 1)
         
     @classmethod
     def fromModels(cls, m1, m2):
         """Returns a Model representing a merge of m1 and m2"""
-        if m1.ssesSignature != m2.ssesSignature:
-            return Exception("Loop SSE signature mismatch!")
-        if len(m1.positions) != len(m2.positions):
-            raise Exception("Loop length mismatch!")
-
-        #find necessary vectors
-        sOffsetV = [m1.sses[1][0].__dict__[c] - m1.sses[0][0].__dict__[c] for c in 'xyz']
-        sSSEV = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
+        frame = m1.frame
+        ret_mode = frame.ret_mode
+        frame.ret_mode = transform.RET_MODE_VECTOR
+        positions = [
+                     frame.transformOutOf(
+                                          weighted_average(
+                                                           m1.frame.transformInto(m1.positions[pos]),
+                                                           m1.frame.transformInto(m2.positions[pos]),
+                                                           m1.size,
+                                                           m2.size
+                                                           )
+                                          )
+                     for pos in range(len(m1.positions))
+                     ]
+        frame.ret_mode = ret_mode
+        return Model(
+                     [m1, m2], #parents
+                     positions, #positions
+                     weighted_average(m1.theta, m2.theta, m1.size, m2.size), #theta
+                     weighted_average(m1.phi, m2.phi, m1.size, m2.size), #phi
+                     weighted_average(m1.anchor_dist, m2.anchor_dist, m1.size, m2.size), #anchor dist
+                     frame, #frame
+                     m1.sse_signature, #sse signature
+                     m1.__merge_seqs(m2, m1.size, m2.size), #seq
+                     m1.size + m2.size #size
+                     )
         
-        oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
-        oSSE0V = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
-#         oSSE1V = Model.__get_sse_vector(m1.sses[1], m1.positions[-1])
-        
-        oSSEV = oSSE0V
-        
-        sOrigin = m1.sses[0][0]
-        oOrigin = m2.sses[0][0]
-        
-        otherPositions = m2.positions
-        
-#         if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
-#             scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
-#             revPos = [k for k in reversed(m2.positions)]
-#             scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
+#         if m1.ssesSignature != m2.ssesSignature:
+#             return Exception("Loop SSE signature mismatch!")
+#         if len(m1.positions) != len(m2.positions):
+#             raise Exception("Loop length mismatch!")
+# 
+#         #find necessary vectors
+#         sOffsetV = [m1.sses[1][0].__dict__[c] - m1.sses[0][0].__dict__[c] for c in 'xyz']
+#         sSSEV = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
+#         
+#         oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
+#         oSSEV = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
+# #         oSSE1V = Model.__get_sse_vector(m1.sses[1], m1.positions[-1])
+#         
+#         
+#         sOrigin = m1.sses[0][0]
+#         oOrigin = m2.sses[0][0]
+#         
+#         otherPositions = m2.positions
+#         
+# #         if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
+# #             scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
+# #             revPos = [k for k in reversed(m2.positions)]
+# #             scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
+# #             
+# #             #if we get a better score with the reversed orientation, flip the orientation
+# #             if(scoreReversed < scoreNormal):
+# #                 otherPositions = revPos
+# #                 oSSEV = oSSE1V
+# #                 oOffsetV = negative(oOffsetV)
+# #                 oOrigin = m2.sses[1][0]
+# #                 
+# #             revPos = None #clear the memory
+#         
+#         sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
+#         oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
+#         
+#         #Determine the position
+#         positions = []
+#         for i in range(len(m1.positions)):
+#             #transform
+#             sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
+#             oPoint = oFrame.transformInto(otherPositions[i])
 #             
-#             #if we get a better score with the reversed orientation, flip the orientation
-#             if(scoreReversed < scoreNormal):
-#                 otherPositions = revPos
-#                 oSSEV = oSSE1V
-#                 oOffsetV = negative(oOffsetV)
-#                 oOrigin = m2.sses[1][0]
-#                 
-#             revPos = None #clear the memory
+#             #Position is m1.positions[i] - sPoint + (sPoint + oPoint) / 2, in other words, the average, displaced back to the position of m1
+#             v = Vec.from_array(sFrame.transformOutOf(Vec({'xyz'[j]: (sPoint[j] + oPoint[j]) / 2 for j in range(3)})))
+#             
+#             positions.append(v)
+#         
+#         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.__merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
-        sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
-        oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
         
-        #Determine the position
-        positions = []
-        for i in range(len(m1.positions)):
-            #transform
-            sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
-            oPoint = oFrame.transformInto(otherPositions[i])
-            
-            #Position is m1.positions[i] - sPoint + (sPoint + oPoint) / 2, in other words, the average, displaced back to the position of m1
-            v = Vec.from_array(sFrame.transformOutOf(Vec({'xyz'[j]: (sPoint[j] + oPoint[j]) / 2 for j in range(3)})))
-            
-            positions.append(v)
-        
-        return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.__merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
         
     @classmethod
     def __get_sse_vector(cls, sse_atoms, loop_anchor):
@@ -240,3 +297,10 @@ class Model:
                                                                                         "[\n\t\t" + "\n\t\t".join([str(pos if type(pos) is Vec else Vec(pos)) for pos in self.positions]) + "\n\t]"
                                                                                         )
                 )
+
+
+def weighted_average(a,b,w1,w2):
+    total = w1 + w2
+    w1 /= float(total)
+    w2 /= float(total)
+    return a*w1 + b*w2
