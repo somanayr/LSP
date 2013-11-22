@@ -23,13 +23,12 @@ class Model:
 #         self.__loops = None #lazy loaded, not safe to call, use get_loops instead
 #         
 
-    def __init__(self, parents, positions, theta, phi, anchor_dist, frame, ssesSignature, seq, size):
+    def __init__(self, parents, positions, theta, phi, anchor_dist, ssesSignature, seq, size):
         self.parents = parents
         self.positions = positions
         self.theta = theta
         self.phi = phi
         self.anchor_dist = anchor_dist
-        self.frame = frame
         self.ssesSignature = ssesSignature
         self.seq = seq
         self.size = size
@@ -52,7 +51,7 @@ class Model:
         
         s_anchor_d = norm(sOffsetV)
         
-        return Model([loop], loop.atoms, s_theta, s_phi, s_anchor_d, sFrame, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
+        return Model([loop], [Vec.from_array(sFrame.transformInto(atom)) for atom in loop.atoms], s_theta, s_phi, s_anchor_d, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
 
         
 #         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
@@ -69,28 +68,31 @@ class Model:
             print "Position size mismatch!"
             return float('inf')
         
-        frame = m1.frame
-        ret_mode = frame.ret_mode
-        frame.ret_mode = transform.RET_MODE_VECTOR
         positions = [
-                     frame.transformOutOf(
-                                          weighted_average(
-                                                           m1.frame.transformInto(m1.positions[pos]),
-                                                           m1.frame.transformInto(m2.positions[pos]),
-                                                           m1.size,
-                                                           m2.size
-                                                           )
-                                          )
+                      weighted_average(
+                                       m1.positions[pos],
+                                       m2.positions[pos],
+                                       m1.size,
+                                       m2.size
+                                       )
                      for pos in range(len(m1.positions))
                      ]
-        frame.ret_mode = ret_mode
+        
+        
+        print "\nMerging!"
+        print m1.size, m2.size
+        print m1.positions
+        print m2.positions
+        print positions
+        
+        
+        
         return Model(
                      [m1, m2], #parents
                      positions, #positions
                      weighted_average(m1.theta, m2.theta, m1.size, m2.size), #theta
                      weighted_average(m1.phi, m2.phi, m1.size, m2.size), #phi
                      weighted_average(m1.anchor_dist, m2.anchor_dist, m1.size, m2.size), #anchor dist
-                     frame, #frame
                      m1.ssesSignature, #sse signature
                      m1.__merge_seqs(m2, m1.size, m2.size), #seq
                      m1.size + m2.size #size
@@ -199,8 +201,8 @@ class Model:
         #Average RMSD
         avg_rmsd = 0
         for i in range(len(self.positions)):
-            sPoint = self.frame.transformInto(self.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
-            oPoint = other.frame.transformInto(other.positions[i])
+            sPoint = [self.positions[i].x, self.positions[i].y, self.positions[i].z] 
+            oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
             avg_rmsd += rmsd(sPoint, oPoint)
         avg_rmsd /= len(self.positions)
         
