@@ -124,13 +124,16 @@ def compute_score_naive(bin_clusters, first_only=True):
         total_model_score += cluster_model_score
         total_structure_score += cluster_structure_score
     
-    total_model_score /= total_clusters
-    total_structure_score /= total_clusters
-    print("Total score: (%f, %f)" % (total_model_score, total_structure_score))
+    if(total_clusters != 0):
+        total_model_score /= total_clusters
+        total_structure_score /= total_clusters
+        print("Total score: (%f, %f)" % (total_model_score, total_structure_score))
+    else:
+        print("Insufficient data to compute score")
     
 
 if __name__ == '__main__':
-    LOOP_LIMIT = -1
+    LOOP_LIMIT = -1#200
     FILE_LIMIT = 500
     files = 0
 

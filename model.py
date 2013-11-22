@@ -23,16 +23,17 @@ class Model:
 #         self.__loops = None #lazy loaded, not safe to call, use get_loops instead
 #         
 
-    def __init__(self, parents, positions, theta, phi, anchor_dist, frame, sseSignature, seq, size):
+    def __init__(self, parents, positions, theta, phi, anchor_dist, frame, ssesSignature, seq, size):
         self.parents = parents
         self.positions = positions
         self.theta = theta
         self.phi = phi
         self.anchor_dist = anchor_dist
         self.frame = frame
-        self.sseSignature = sseSignature
+        self.ssesSignature = ssesSignature
         self.seq = seq
         self.size = size
+        self.__loops = None
 
     @classmethod
     def fromLoop(cls, loop):
@@ -51,7 +52,7 @@ class Model:
         
         s_anchor_d = norm(sOffsetV)
         
-        return Model([loop], loop.atoms, s_theta, s_phi, s_anchor_d, sFrame, [loop.l_type, loop.r_type], Model.__gen_seq([loop]) , 1)
+        return Model([loop], loop.atoms, s_theta, s_phi, s_anchor_d, sFrame, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
 
         
 #         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
@@ -60,6 +61,14 @@ class Model:
     @classmethod
     def fromModels(cls, m1, m2):
         """Returns a Model representing a merge of m1 and m2"""
+        #check validity
+        if m1.ssesSignature != m2.ssesSignature:
+            print "SSE signature mistmatch!"
+            return float('inf')
+        if len(m1.positions) != len(m2.positions):
+            print "Position size mismatch!"
+            return float('inf')
+        
         frame = m1.frame
         ret_mode = frame.ret_mode
         frame.ret_mode = transform.RET_MODE_VECTOR
@@ -82,7 +91,7 @@ class Model:
                      weighted_average(m1.phi, m2.phi, m1.size, m2.size), #phi
                      weighted_average(m1.anchor_dist, m2.anchor_dist, m1.size, m2.size), #anchor dist
                      frame, #frame
-                     m1.sse_signature, #sse signature
+                     m1.ssesSignature, #sse signature
                      m1.__merge_seqs(m2, m1.size, m2.size), #seq
                      m1.size + m2.size #size
                      )
@@ -161,7 +170,6 @@ class Model:
         if len(self.positions) != len(other.positions):
             print "Position size mismatch!"
             return float('inf')
-        2
 #         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
 #             #Try both, return the best
 #             return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
@@ -169,30 +177,30 @@ class Model:
 #         else:
 
 
-        return self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd=max_rmsd, verbose=verbose)
+        return self.__compute_scores(other, max_rmsd=max_rmsd, verbose=verbose)
         
         
         
-    def __compute_scores(self, other_sses_0, other_sses_1, other_positions, max_rmsd=2, verbose=False):
+    def __compute_scores(self, other, max_rmsd=2, verbose=False):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #get necessary vectors
-        sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
-        sSSE0V = Model.__get_sse_vector(self.sses[0], self.positions[0])
-        sSSE1V = Model.__get_sse_vector(self.sses[1], self.positions[-1]) 
-
-        
-        oOffsetV = [other_sses_1[0].__dict__[c] - other_sses_0[0].__dict__[c] for c in 'xyz']
-        oSSE0V = Model.__get_sse_vector(other_sses_0, other_positions[0])
-        oSSE1V = Model.__get_sse_vector(other_sses_1, other_positions[-1])
-        
-        sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
-        oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
-        
+#         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
+#         sSSE0V = Model.__get_sse_vector(self.sses[0], self.positions[0])
+#         sSSE1V = Model.__get_sse_vector(self.sses[1], self.positions[-1]) 
+# 
+#         
+#         oOffsetV = [other_sses_1[0].__dict__[c] - other_sses_0[0].__dict__[c] for c in 'xyz']
+#         oSSE0V = Model.__get_sse_vector(other_sses_0, other_positions[0])
+#         oSSE1V = Model.__get_sse_vector(other_sses_1, other_positions[-1])
+#         
+#         sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
+#         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
+#         
         #Average RMSD
         avg_rmsd = 0
         for i in range(len(self.positions)):
-            sPoint = sFrame.transformInto(self.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
-            oPoint = oFrame.transformInto(other_positions[i])
+            sPoint = self.frame.transformInto(self.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
+            oPoint = other.frame.transformInto(other.positions[i])
             avg_rmsd += rmsd(sPoint, oPoint)
         avg_rmsd /= len(self.positions)
         
@@ -201,19 +209,19 @@ class Model:
             return float('inf')
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
-        s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
-        s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
-        
-        o_theta = arccos(dot(oSSE0V, negative(oOffsetV)) / (norm(oSSE0V) * norm(oOffsetV)))
-        o_phi = arccos(dot(oSSE1V, oOffsetV) / (norm(oSSE1V) * norm(oOffsetV)))
-        
-        s_anchor_d = norm(sOffsetV)
-        o_anchor_d = norm(oOffsetV)
+#         s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
+#         s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
+#         
+#         o_theta = arccos(dot(oSSE0V, negative(oOffsetV)) / (norm(oSSE0V) * norm(oOffsetV)))
+#         o_phi = arccos(dot(oSSE1V, oOffsetV) / (norm(oSSE1V) * norm(oOffsetV)))
+#         
+#         s_anchor_d = norm(sOffsetV)
+#         o_anchor_d = norm(oOffsetV)
         
         #Using eculdian distance... is there a better way to do this?
         #I figure anchor d is the biggest value, and that's the one we want weighted the most heavily
         #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
-        return (s_anchor_d - o_anchor_d) * (s_anchor_d - o_anchor_d) + (s_phi - o_phi) * (s_phi - o_phi) + (s_theta - o_theta) * (s_theta - o_theta) + avg_rmsd;
+        return (self.anchor_dist - other.anchor_dist) * (self.anchor_dist - other.anchor_dist) + (self.phi - other.phi) * (self.phi - other.phi) + (self.theta - other.theta) * (self.theta - other.theta) + avg_rmsd;
     
     def get_loops(self, loops):
         """Finds loops from this and all parent sequences and dumps them into loops. Lazy loads loops"""
