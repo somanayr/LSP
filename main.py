@@ -59,7 +59,7 @@ def generate_histogram_data(bin_clusters):
             
 
     
-def compute_score_naive(bin_clusters, first_only=True):
+def compute_score_naive(bin_clusters, first_only=False):
 ##Naive testing - check if a loop gets placed into it's model
     total_model_score = 0
     total_structure_score = 0
@@ -133,8 +133,10 @@ def compute_score_naive(bin_clusters, first_only=True):
     
 
 if __name__ == '__main__':
-    LOOP_LIMIT = -1#200
-    FILE_LIMIT = 500
+    LOOP_LIMIT = 200
+    FILE_LIMIT = -1
+    
+    
     files = 0
 
     ###############
@@ -156,8 +158,10 @@ if __name__ == '__main__':
     # General container for all extracted Loop Structures
     loops = []
     
+    pdb_dir = os.listdir("pdb")
+    
     # Iterate over each file in the PDB directory
-    for f in os.listdir("pdb"):
+    for f in pdb_dir:
         
         # If the file is in fact a PDB file, attempt to extract the Loop Structures
         if(f.endswith(".pdb")):
@@ -201,14 +205,24 @@ if __name__ == '__main__':
                 if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1) and not (len(loop.atoms) < 7 or len(loop.atoms) > 9):
                     loops.append(loop)
             
+            #We've read a file in, note that
+            files += 1
+            
             # Debug: After each file, print the updated amount of loops
-            if display_file_debug: 
+            if display_file_debug:
                 print " > Total Loops:", len(loops)
+            
+            #Display progress:
+            file_progress = float(files) / FILE_LIMIT
+            loop_progress = float(len(loops)) / LOOP_LIMIT
+            dir_progress = float(files) / len(pdb_dir)
+            
+            progress = max(file_progress, loop_progress, dir_progress)
+            print("Loading... %.2f%%" % (progress*100))
 
             # ? (why would we break after finding 200-ish loops?)
             if(LOOP_LIMIT >= 0 and len(loops) >= LOOP_LIMIT): break
 
-            files += 1
             if(FILE_LIMIT >= 0 and files >= FILE_LIMIT): break
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction

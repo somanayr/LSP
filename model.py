@@ -63,10 +63,13 @@ class Model:
         #check validity
         if m1.ssesSignature != m2.ssesSignature:
             print "SSE signature mistmatch!"
-            return float('inf')
+            raise Exception("SSE signature mismatch!")
         if len(m1.positions) != len(m2.positions):
             print "Position size mismatch!"
-            return float('inf')
+            raise Exception("Position size mismatch!")
+        if abs(m1.anchor_dist - m2.anchor_dist) > 2:
+            print "Anchor distance mismatch!"
+            raise Exception("Anchor distance mismatch!")
         
         positions = [
                       weighted_average(
@@ -200,15 +203,22 @@ class Model:
 #         
         #Average RMSD
         avg_rmsd = 0
-        for i in range(len(self.positions)):
-            sPoint = [self.positions[i].x, self.positions[i].y, self.positions[i].z] 
-            oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
-            avg_rmsd += rmsd(sPoint, oPoint)
-        avg_rmsd /= len(self.positions)
+#         for i in range(len(self.positions)):
+#             sPoint = [self.positions[i].x, self.positions[i].y, self.positions[i].z] 
+#             oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
+#             avg_rmsd += rmsd(sPoint, oPoint)
+#         avg_rmsd /= len(self.positions)
+        
+        avg_rmsd = 0
         
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
             return float('inf')
+        
+        if max_rmsd > 0 and abs(self.anchor_dist - other.anchor_dist) > max_rmsd:
+            if(verbose): print "Anchor distance mismatch! abs(%f-%f) > %f" % (self.anchor_dist, other.anchor_dist, max_rmsd) 
+            return float('inf')
+            
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
 #         s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
