@@ -155,27 +155,27 @@ class Model:
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
             return float('inf')
         
-        if max_rmsd > 0 and abs(self.anchor_dist - other.anchor_dist) > max_rmsd:
-            if(verbose): print "Anchor distance mismatch! abs(%f-%f) > %f" % (self.anchor_dist, other.anchor_dist, max_rmsd) 
-            return float('inf')
-        
-        if max_rmsd > 0 and abs(self.phi - other.phi) > .2:
-            if(verbose): print "Phi mismatch! abs(%f-%f) > %f" % (self.phi, other.phi, max_rmsd) 
-            return float('inf')
-        
-        if max_rmsd > 0 and abs(self.theta - other.theta) > .2:
-            if(verbose): print "Theta mismatch! abs(%f-%f) > %f" % (self.theta, other.theta, max_rmsd) 
-            return float('inf')
-        
         #Compute score
         anchor_dist_score = perc_diff(self.anchor_dist, other.anchor_dist, *Model.__anchor_dist)
         phi_score = perc_diff(self.phi, other.phi, *Model.__phi)
         theta_score = perc_diff(self.theta, other.theta, *Model.__theta)
         
+        #Result cutoffs. Must be 95% similarity
+        if max_rmsd > 0 and anchor_dist_score > .05:
+            if(verbose): print "Anchor distance mismatch! abs(%f-%f) > %f" % (self.anchor_dist, other.anchor_dist, max_rmsd) 
+            return float('inf')
+         
+        if max_rmsd > 0 and phi_score > .05:
+            if(verbose): print "Phi mismatch! abs(%f-%f) > %f" % (self.phi, other.phi, max_rmsd) 
+            return float('inf')
+         
+        if max_rmsd > 0 and theta_score > .05:
+            if(verbose): print "Theta mismatch! abs(%f-%f) > %f" % (self.theta, other.theta, max_rmsd) 
+            return float('inf')
+        
         result = anchor_dist_score + phi_score + theta_score
         
-        print "Score %f + %f + %f = %f" % (anchor_dist_score, phi_score, theta_score, result)
-        
+#         print "Score %f + %f + %f = %f" % (anchor_dist_score, phi_score, theta_score, result)
         
         return result
         
@@ -291,12 +291,12 @@ def perc_diff(a,b,mn,mx):
         raise Exception("a (%s) out of bounds [%s,%s]" % (a, mn, mx))
     if(b > mx or b < mn):
         raise Exception("b (%s) out of bounds [%s,%s]" % (b, mn, mx))
-        
+    
     dif = mx-mn
     
     #compute percents
     a_perc = (a - mn) / dif
-    b_perc = (a - mn) / dif
+    b_perc = (b - mn) / dif
     
     return abs(a_perc - b_perc)
 

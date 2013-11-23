@@ -133,8 +133,8 @@ def compute_score_naive(bin_clusters, first_only=False):
     
 
 if __name__ == '__main__':
-    LOOP_LIMIT = 500
-    FILE_LIMIT = -1
+    LOOP_LIMIT = -1
+    FILE_LIMIT = 500
     
     
     files = 0
