@@ -44,10 +44,10 @@ Play with search parameters (RMSD? limit loop length 7-9)
 
 Assignments:
 	Serena
-		Start writing intro/bg
+		Start writing intro/bgf
 		Write clustering methods
 	Ryan
-		Feature vector
+		X Feature vector
 		Different weights for feature comparison
 		Histograms/other viz
 			X code

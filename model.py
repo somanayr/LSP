@@ -10,6 +10,11 @@ import transform
 from numpy.ma.core import negative
 
 class Model:
+    
+    __phi = [float("inf"), float("-inf")]
+    __theta = [float("inf"), float("-inf")]
+    __anchor_dist = [float("inf"), float("-inf")]
+    
 #     def __init__(self, parents, positions, sses, ssesSignature, seq, size):
 #         '''
 #         Generates a model from list of similar loops, loops
@@ -38,20 +43,24 @@ class Model:
     def fromLoop(cls, loop):
         """Returns a Model representing the loop"""
         #get necessary vectors
-        sOffsetV = [loop.r_anchor[0].__dict__[c] - loop.l_anchor[0].__dict__[c] for c in 'xyz']
-        sSSE0V = Model.__get_sse_vector(loop.l_anchor, loop.atoms[0])
-        sSSE1V = Model.__get_sse_vector(loop.r_anchor, loop.atoms[-1]) 
+        offset_v = [loop.r_anchor[0].__dict__[c] - loop.l_anchor[0].__dict__[c] for c in 'xyz']
+        sse0_v = Model.__get_sse_vector(loop.l_anchor, loop.atoms[0])
+        sse1_v = Model.__get_sse_vector(loop.r_anchor, loop.atoms[-1]) 
 
         
-        sFrame = TransformFrame.createFromVectors(loop.l_anchor[0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
+        sFrame = TransformFrame.createFromVectors(loop.l_anchor[0], transform.Vec.from_array(offset_v), transform.Vec.from_array(sse0_v))
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
-        s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
-        s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
+        theta = arccos(dot(sse0_v, negative(offset_v)) / (norm(sse0_v) * norm(offset_v)))
+        phi = arccos(dot(sse1_v, offset_v) / (norm(sse1_v) * norm(offset_v)))
         
-        s_anchor_d = norm(sOffsetV)
+        anchor_dist = norm(offset_v)
         
-        return Model([loop], [Vec.from_array(sFrame.transformInto(atom)) for atom in loop.atoms], s_theta, s_phi, s_anchor_d, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
+        update_min_max(phi, Model.__phi)
+        update_min_max(theta, Model.__theta)
+        update_min_max(anchor_dist, Model.__anchor_dist)
+        
+        return Model([loop], [Vec.from_array(sFrame.transformInto(atom)) for atom in loop.atoms], theta, phi, anchor_dist, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
 
         
 #         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
@@ -101,58 +110,6 @@ class Model:
                      m1.size + m2.size #size
                      )
         
-#         if m1.ssesSignature != m2.ssesSignature:
-#             return Exception("Loop SSE signature mismatch!")
-#         if len(m1.positions) != len(m2.positions):
-#             raise Exception("Loop length mismatch!")
-# 
-#         #find necessary vectors
-#         sOffsetV = [m1.sses[1][0].__dict__[c] - m1.sses[0][0].__dict__[c] for c in 'xyz']
-#         sSSEV = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
-#         
-#         oOffsetV = [m2.sses[1][0].__dict__[c] - m2.sses[0][0].__dict__[c] for c in 'xyz']
-#         oSSEV = Model.__get_sse_vector(m1.sses[0], m1.positions[0])
-# #         oSSE1V = Model.__get_sse_vector(m1.sses[1], m1.positions[-1])
-#         
-#         
-#         sOrigin = m1.sses[0][0]
-#         oOrigin = m2.sses[0][0]
-#         
-#         otherPositions = m2.positions
-#         
-# #         if m1.ssesSignature[0] == m1.ssesSignature[1]: #if we have helix/helix or sheet/sheet, we don't know which sheet is "first", so decide that based on which has a better score
-# #             scoreNormal = m1.__compute_scores(m2.sses[0], m2.sses[1], m2.positions)
-# #             revPos = [k for k in reversed(m2.positions)]
-# #             scoreReversed = m1.__compute_scores(m2.sses[1], m2.sses[0], revPos)
-# #             
-# #             #if we get a better score with the reversed orientation, flip the orientation
-# #             if(scoreReversed < scoreNormal):
-# #                 otherPositions = revPos
-# #                 oSSEV = oSSE1V
-# #                 oOffsetV = negative(oOffsetV)
-# #                 oOrigin = m2.sses[1][0]
-# #                 
-# #             revPos = None #clear the memory
-#         
-#         sFrame = TransformFrame.createFromVectors(sOrigin, transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSEV))
-#         oFrame = TransformFrame.createFromVectors(oOrigin, transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSEV))
-#         
-#         #Determine the position
-#         positions = []
-#         for i in range(len(m1.positions)):
-#             #transform
-#             sPoint = sFrame.transformInto(m1.positions[i]) #we transform from global space to loop space so that we have a relative points... xyz from the SSE, not the origin
-#             oPoint = oFrame.transformInto(otherPositions[i])
-#             
-#             #Position is m1.positions[i] - sPoint + (sPoint + oPoint) / 2, in other words, the average, displaced back to the position of m1
-#             v = Vec.from_array(sFrame.transformOutOf(Vec({'xyz'[j]: (sPoint[j] + oPoint[j]) / 2 for j in range(3)})))
-#             
-#             positions.append(v)
-#         
-#         return Model([m1,m2], positions, m1.sses, m1.ssesSignature, m1.__merge_seqs(m2, m1.size, m2.size), m1.size + m2.size)
-        
-        
-        
     @classmethod
     def __get_sse_vector(cls, sse_atoms, loop_anchor):
         """Get the vector along an SSE. If the SSE contains only 1 atom, it will return the vector from that atom to the loop anchor,
@@ -175,12 +132,6 @@ class Model:
         if len(self.positions) != len(other.positions):
             print "Position size mismatch!"
             return float('inf')
-#         if self.ssesSignature[0] == self.ssesSignature[1]: #if ends are helix/helix or sheet/sheet, then you don't know which end aligns with which
-#             #Try both, return the best
-#             return max(self.__compute_scores(other.sses[0], other.sses[1], other.positions, max_rmsd),
-#                        self.__compute_scores(other.sses[1], other.sses[0], [k for k in reversed(other.positions)], max_rmsd))
-#         else:
-
 
         return self.__compute_scores(other, max_rmsd=max_rmsd, verbose=verbose)
         
@@ -188,29 +139,18 @@ class Model:
         
     def __compute_scores(self, other, max_rmsd=2, verbose=False):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
-        #get necessary vectors
-#         sOffsetV = [self.sses[1][0].__dict__[c] - self.sses[0][0].__dict__[c] for c in 'xyz']
-#         sSSE0V = Model.__get_sse_vector(self.sses[0], self.positions[0])
-#         sSSE1V = Model.__get_sse_vector(self.sses[1], self.positions[-1]) 
-# 
-#         
-#         oOffsetV = [other_sses_1[0].__dict__[c] - other_sses_0[0].__dict__[c] for c in 'xyz']
-#         oSSE0V = Model.__get_sse_vector(other_sses_0, other_positions[0])
-#         oSSE1V = Model.__get_sse_vector(other_sses_1, other_positions[-1])
-#         
-#         sFrame = TransformFrame.createFromVectors(self.sses[0][0], transform.Vec.from_array(sOffsetV), transform.Vec.from_array(sSSE0V))
-#         oFrame = TransformFrame.createFromVectors(other_sses_0[0], transform.Vec.from_array(oOffsetV), transform.Vec.from_array(oSSE0V))
-#         
         #Average RMSD
         avg_rmsd = 0
-#         for i in range(len(self.positions)):
-#             sPoint = [self.positions[i].x, self.positions[i].y, self.positions[i].z] 
-#             oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
-#             avg_rmsd += rmsd(sPoint, oPoint)
-#         avg_rmsd /= len(self.positions)
+        for i in range(len(self.positions)):
+            sPoint = [self.positions[i].x, self.positions[i].y, self.positions[i].z] 
+            oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
+            avg_rmsd += rmsd(sPoint, oPoint)
+        avg_rmsd /= len(self.positions)
         
         avg_rmsd = 0
         
+        
+        #Cutoffs
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
             return float('inf')
@@ -218,33 +158,47 @@ class Model:
         if max_rmsd > 0 and abs(self.anchor_dist - other.anchor_dist) > max_rmsd:
             if(verbose): print "Anchor distance mismatch! abs(%f-%f) > %f" % (self.anchor_dist, other.anchor_dist, max_rmsd) 
             return float('inf')
-            
         
-        #Theta and phi are the angles between the SSE and anchor-anchor vector
-#         s_theta = arccos(dot(sSSE0V, negative(sOffsetV)) / (norm(sSSE0V) * norm(sOffsetV)))
-#         s_phi = arccos(dot(sSSE1V, sOffsetV) / (norm(sSSE1V) * norm(sOffsetV)))
-#         
-#         o_theta = arccos(dot(oSSE0V, negative(oOffsetV)) / (norm(oSSE0V) * norm(oOffsetV)))
-#         o_phi = arccos(dot(oSSE1V, oOffsetV) / (norm(oSSE1V) * norm(oOffsetV)))
-#         
-#         s_anchor_d = norm(sOffsetV)
-#         o_anchor_d = norm(oOffsetV)
+        if max_rmsd > 0 and abs(self.phi - other.phi) > .2:
+            if(verbose): print "Phi mismatch! abs(%f-%f) > %f" % (self.phi, other.phi, max_rmsd) 
+            return float('inf')
+        
+        if max_rmsd > 0 and abs(self.theta - other.theta) > .2:
+            if(verbose): print "Theta mismatch! abs(%f-%f) > %f" % (self.theta, other.theta, max_rmsd) 
+            return float('inf')
+        
+        #Compute score
+        anchor_dist_score = perc_diff(self.anchor_dist, other.anchor_dist, *Model.__anchor_dist)
+        phi_score = perc_diff(self.phi, other.phi, *Model.__phi)
+        theta_score = perc_diff(self.theta, other.theta, *Model.__theta)
+        
+        result = anchor_dist_score + phi_score + theta_score
+        
+        print "Score %f + %f + %f = %f" % (anchor_dist_score, phi_score, theta_score, result)
+        
+        
+        return result
         
         #Using eculdian distance... is there a better way to do this?
         #I figure anchor d is the biggest value, and that's the one we want weighted the most heavily
         #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
-        return (self.anchor_dist - other.anchor_dist) * (self.anchor_dist - other.anchor_dist) + (self.phi - other.phi) * (self.phi - other.phi) + (self.theta - other.theta) * (self.theta - other.theta) + avg_rmsd;
+#         return (self.anchor_dist - other.anchor_dist) * (self.anchor_dist - other.anchor_dist) + (self.phi - other.phi) * (self.phi - other.phi) + (self.theta - other.theta) * (self.theta - other.theta) + avg_rmsd;
     
     def get_loops(self, loops):
         """Finds loops from this and all parent sequences and dumps them into loops. Lazy loads loops"""
-        if(self.__loops == None):
+        if(self.__loops == None): #determine if we have a loop cache
+            #if not, generate one recursively
             l = []
-            if(len(self.parents) == 1):
+            if(len(self.parents) == 1): #base case
                 l = [self.parents[0]]
-            else:
+            else: #recursion case
                 self.parents[0].get_loops(l)
                 self.parents[1].get_loops(l)
+                
+            #save result for next time so we don't have to recompute
             self.__loops = l
+        
+        #add our loops to caller's loops. Will not allow caller to modify our cache
         loops += self.__loops
    
     @classmethod
@@ -320,7 +274,33 @@ class Model:
 
 
 def weighted_average(a,b,w1,w2):
+    """
+    Returns a weighted average of a and b with weights w1, w2. w1,w2 do not need to be normalized
+    """
+    #normalize weights
     total = w1 + w2
     w1 /= float(total)
     w2 /= float(total)
+    
+    #compute avg
     return a*w1 + b*w2
+
+def perc_diff(a,b,mn,mx):
+    """Converts a,b to percentage from mx to mn, then returns the difference."""
+    if(a > mx or a < mn):
+        raise Exception("a (%s) out of bounds [%s,%s]" % (a, mn, mx))
+    if(b > mx or b < mn):
+        raise Exception("b (%s) out of bounds [%s,%s]" % (b, mn, mx))
+        
+    dif = mx-mn
+    
+    #compute percents
+    a_perc = (a - mn) / dif
+    b_perc = (a - mn) / dif
+    
+    return abs(a_perc - b_perc)
+
+def update_min_max(x, min_max_ar):
+    """Takes a min/max array [min,max] and a value to update the array with"""
+    min_max_ar[0] = min(x, min_max_ar[0])
+    min_max_ar[1] = max(x, min_max_ar[1])
