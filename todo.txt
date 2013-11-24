@@ -57,7 +57,7 @@ Assignments:
 		X Limit file input count
 		Run it!
 		X Write model merge/structure compare
-		Write model representation
+		X Write model representation
 		Upload ALL of the soluble proteins
 	Travis
 		N-fold x-val
