@@ -213,7 +213,7 @@ def compute_score_naive(bin_clusters, first_only=True):
                     cluster_partial_structure_score[1][1] += 1
             
             
-            print "Loop score: (%f, %f)" % (model_score, structure_score)
+#             print "Loop score: (%f, %f)" % (model_score, structure_score)
                     
             cluster_model_score += model_score
             cluster_structure_score += structure_score
@@ -237,7 +237,7 @@ def compute_score_naive(bin_clusters, first_only=True):
         except:
             pass
             
-        print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
+#         print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
         
         total_model_score += cluster_model_score
         total_structure_score += cluster_structure_score
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     ###########################################################################
     # Initial loop extraction
     ###########################################################################
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=5000)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False
