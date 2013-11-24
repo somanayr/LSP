@@ -56,7 +56,7 @@ Assignments:
 		X Limit loop lengths
 		X Limit file input count
 		Run it!
-		Write model merge/structure compare
+		X Write model merge/structure compare
 		Write model representation
 		Upload ALL of the soluble proteins
 	Travis
