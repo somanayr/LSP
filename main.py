@@ -248,7 +248,15 @@ def compute_score_naive(bin_clusters, first_only=True):
     if(total_clusters != 0):
         total_model_score /= total_clusters
         total_structure_score /= total_clusters
-        print("Total score: (%f, %f (%f, %f))" % (total_model_score, total_structure_score, total_partial_structure_score[0][0] / total_partial_structure_score[0][1], total_partial_structure_score[1][0] / total_partial_structure_score[1][1]))
+        try:
+            ps1 = total_partial_structure_score[0][0] / total_partial_structure_score[0][1]
+        except:
+            ps1 = float("nan")
+        try:
+            ps2 = total_partial_structure_score[1][0] / total_partial_structure_score[1][1]
+        except:
+            ps2 = float("nan")
+        print("Total score: (%f, %f (%f, %f))" % (total_model_score, total_structure_score, ps1, ps2))
     else:
         print("Insufficient data to compute score")
     
@@ -258,7 +266,7 @@ if __name__ == '__main__':
     ###########################################################################
     # Initial loop extraction
     ###########################################################################
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=5000)
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=200)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False

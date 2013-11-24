@@ -92,11 +92,11 @@ class Model:
                      ]
         
         
-#         print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
-#         print m1.size, m2.size
-#         print m1.positions
-#         print m2.positions
-#         print positions
+        print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
+        print m1.size, m2.size
+        print m1.positions
+        print m2.positions
+        print positions
         
         
         
@@ -148,9 +148,6 @@ class Model:
             avg_rmsd += rmsd(sPoint, oPoint)
         avg_rmsd /= len(self.positions)
         
-        avg_rmsd = 0
-        
-        
         #Cutoffs
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
@@ -174,6 +171,7 @@ class Model:
             if(verbose): print "Theta mismatch! abs(%f-%f) > %f" % (self.theta, other.theta, max_rmsd) 
             return float('inf')
         
+        if(verbose): print anchor_dist_score, phi_score, theta_score, avg_rmsd/std_rmsd_cutoff * perc_cutoff
         result = anchor_dist_score + phi_score + theta_score + avg_rmsd/std_rmsd_cutoff * perc_cutoff
         
 #         print "Score %f + %f + %f = %f" % (anchor_dist_score, phi_score, theta_score, result)
