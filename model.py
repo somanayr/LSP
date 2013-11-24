@@ -12,6 +12,8 @@ from test.double_const import PI
 
 class Model:
     
+    verbose = False
+    
     __phi = [0, 2*PI]
     __theta = [0, 2*PI]
     __anchor_dist = [0, float("-inf")]
@@ -91,12 +93,12 @@ class Model:
                      for pos in range(len(m1.positions))
                      ]
         
-        
-        print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
-        print m1.size, m2.size
-        print m1.positions
-        print m2.positions
-        print positions
+        if(Model.verbose):
+            print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
+            print m1.size, m2.size
+            print m1.positions
+            print m2.positions
+            print positions
         
         
         
@@ -120,7 +122,7 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
+    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=Model.verbose):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -138,7 +140,7 @@ class Model:
         
         
         
-    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
+    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=Model.verbose):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #Average RMSD
         avg_rmsd = 0

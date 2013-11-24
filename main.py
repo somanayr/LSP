@@ -266,7 +266,7 @@ if __name__ == '__main__':
     ###########################################################################
     # Initial loop extraction
     ###########################################################################
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=200)
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False
