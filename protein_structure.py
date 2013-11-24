@@ -36,6 +36,9 @@ class Loop:
 
         return "Loop" + str(self.start) + "-" + str(self.end) + ", Anchors[" + la_str + " # " + ra_str + "], Types" + str((self.l_type,self.r_type))
 
+    def getSSESignature(self):
+        return str(self.l_type[0] + self.r_type[0])
+
 class Atom:
     """
     An atom from a pdb file: residue number, residue type, atom type, and x,y,z coordinates.

@@ -1,3 +1,4 @@
+from model import Model
 from SubstitutionMatrix import blosum62
 
 def classify_loop_seq(input_seq, clusters, subst=blosum62):
@@ -10,6 +11,7 @@ def classify_loop_seq(input_seq, clusters, subst=blosum62):
     TODO: we haven't handled the case where we should not classify the loop_sequence.
     TODO: once we have identified a representative cluster for an input sequence, we
     should actually say something more meaningful about its predicted structure. 
+    @author: Travis Peters
     """
     scores = []
     for cluster in clusters:
@@ -31,3 +33,66 @@ def classify_loop_seq(input_seq, clusters, subst=blosum62):
         scores.append( (cluster, score) )
     
     return scores # a list of tuples (model, match_score)
+
+
+def neighbors(instance, others, k=1):
+    """
+    Return the k nearest neighbors to instance among others.
+    
+    Inputs:
+    # instance - a given loop.
+    # others   - a list of ALL the other loops/models.
+    # k        - the number of closest neighbors to return.
+
+    Output:
+    # list of the k nearest neighbors.
+    @author: Travis Peters
+    """
+
+    # Eliminate bins where sequence length != to length of the test instance's sequence
+    valid_bin_clusters = [bc for bc in others if ((bc[0][0] == len(instance.seq)) and (bc[0][1] == instance.getSSESignature()))]
+
+    # Now use the valid clusters to attempt to classify the test instance sequence.
+    prediction_scores = []
+    for bc in valid_bin_clusters:
+        prediction_scores.extend( classify_loop_seq(instance.seq, bc[1]) )
+
+    # Sort the "neighbors" by their computed classification score.
+    prediction_scores.sort(key=lambda x: x[1], reverse=True)
+
+    # Now that we have a list of neighbors from closest to farthest
+    # (best scoring to worst scoring), drop the distance data and just 
+    # construct a list of the neighbors themselves. 
+    neighbors = [x[0] for x in prediction_scores]
+
+    return neighbors[:k]
+
+
+def knn(train, test, k=1):
+    """
+    Return a list of comparison scores computed between each loop in test and its 
+    'nearest neighbor' (highest scoring model) from the models in train.
+    @author: Travis Peters
+    """
+    
+    # Given a test instance, find its k-nearest neighbors in the training set
+    knn_list = []
+    for test_instance in test:
+        knn_list.append( (test_instance, neighbors(test_instance, train, k)) )
+
+    # Compare each test instance and its best matching model...
+    test_results = []
+    for t in knn_list:
+        # Un-pack test/best matching loop
+        testLoop = t[0]
+        bestMatchLoop = t[1][0]
+        
+        # Compute comparison
+        testLoopModel = Model.fromLoop(testLoop)
+        cmp_score = testLoopModel.compare(bestMatchLoop, max_rmsd=-1)        
+
+        # Record (1) best matching model, and (2) comparison score
+        test_results.append( (t[1], cmp_score) )
+
+    # Tuple of ( best_model, compare_score)
+    return test_results

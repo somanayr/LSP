@@ -122,7 +122,7 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=Model.verbose):
+    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -140,7 +140,7 @@ class Model:
         
         
         
-    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=Model.verbose):
+    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #Average RMSD
         avg_rmsd = 0
