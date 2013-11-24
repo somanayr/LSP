@@ -91,7 +91,7 @@ class Model:
                      ]
         
         
-        print "\nMerging!"
+        print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
         print m1.size, m2.size
         print m1.positions
         print m2.positions
