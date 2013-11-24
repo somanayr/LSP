@@ -187,18 +187,19 @@ def compute_score_naive(bin_clusters, first_only=False):
                 for score in scores:
                     temp_loop_set = []
                     score[0].get_loops(temp_loop_set)
+                    structure_score += score[0].compare(model, max_rmsd=-1, verbose=True)
                     if loop in temp_loop_set: #is match
                         break 
-                    structure_score += score[0].compare(model, max_rmsd=-1, verbose=True)
                     tries+=1
                  
                 #Higher score is better!
                 model_score = (len(scores) - tries) / (len(scores) + 0.0)
             else:
+                #Only search first result
                 temp_loop_set = []
                 scores[0][0].get_loops(temp_loop_set)
                 model_score = 0.0
-                structure_score = - (1/scores[0][0].compare(model, max_rmsd=-1, verbose=True))
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
                 if loop in temp_loop_set:
                     model_score = 1.0
             
@@ -207,6 +208,7 @@ def compute_score_naive(bin_clusters, first_only=False):
                     
             cluster_model_score += model_score
             cluster_structure_score += structure_score
+            
         cluster_model_score /= len(loop_set)
         cluster_structure_score /= len(loop_set)
         print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
@@ -295,7 +297,7 @@ if __name__ == '__main__':
         if modelNum >= TOP_SCORES-1: break
 
     generate_histogram_data(bin_clusters)
-    compute_score_naive(bin_clusters)        
+    compute_score_naive(bin_clusters)
     ###########################################################################
    
     ###########################################################################
