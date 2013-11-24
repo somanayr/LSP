@@ -1,6 +1,3 @@
-'''
-Created on Oct 28, 2013
-'''
 from pdb_reader import get_loops
 from cluster import length_cluster, sse_similarity_cluster, hierarchical
 from model import Model
@@ -8,11 +5,103 @@ from classify import classify_loop_seq
 from SubstitutionMatrix import blosum62
 import os
 
-def loop_extraction(pdb_dir, maxLoopCount=200):
-    """Given a directory, locate PDB files and extract loops from each PDB file."""
-    # TODO: take code from main and make it a function so that main consists of
-    # primarily driver code (cleaner, simpler, shorter...).
-    pass
+def extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=50):
+    """
+    Given a directory, locate PDB files and extract loops from each PDB file.
+    @author: Travis Peters
+    """    
+
+    ###########################################################################
+    # DEBUG FLAGS
+    ###########################################################################
+
+    # Indicates whether or not to write extracted loop info to console
+    display_file_debug = True
+
+    # Indicates whether or not to write extracted loop info to console
+    display_loop_debug = False
+
+    ###########################################################################
+    # Loop extraction
+    ###########################################################################
+    
+    # General container for all extracted Loop Structures
+    loops = []
+    
+    # Store a list of files in the PDB directory
+    pdb_files = os.listdir(pdb_dir)
+
+    # Keep track of the number of processed PDB files
+    files = 0
+    
+    # Iterate over each file in the PDB directory
+    for f in pdb_files:
+        
+        # If the file is in fact a PDB file, attempt to extract the Loop Structures
+        if(f.endswith(".pdb")):
+            
+            if display_file_debug: 
+                print "Loading loops from file: " + f + "...";   
+            
+            # Get the loop candidates from a PDB file
+            try:
+                l_cand = get_loops(pdb_dir + "/" + f)
+            except:
+                continue
+
+            # Check each extracted loop and determine if it is a valid loop (i.e. has left/right anchor)            
+            for loop in l_cand:
+
+                # Debug: Write loop info to console
+                if display_loop_debug:
+                    la = ""
+                    if len(loop.l_anchor) > 0:
+                        la = "["
+                        for a in loop.l_anchor:
+                            la += str(a) + ","
+                        la = la[0:-1] + "]"
+                    else:
+                        la = "[]"
+    
+                    ra = ""
+                    if len(loop.r_anchor) > 0:
+                        ra = "["
+                        for a in loop.r_anchor:
+                            ra += str(a) + ","
+                        ra = ra[0:-1] + "]"
+                    else:
+                        ra = "[]"
+
+                    print "[" + la + "," + ra + "]"
+
+                # If both the left & right anchor exist and the loop in question is between 7 and 9
+                # residues, we will consider this loop to be a valid Loop Structure
+                # (i.e. this loop is not an "end point")
+                if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1) and not (len(loop.atoms) < 7 or len(loop.atoms) > 9):
+                    loops.append(loop)
+            
+            # We've read a file in, note that
+            files += 1
+            
+            # Debug: After each file, print the updated amount of loops
+            if display_file_debug:
+                print " > Total Loops:", len(loops)
+            
+            # Display progress:
+            file_progress = float(files) / fileLimit
+            loop_progress = float(len(loops)) / loopLimit
+            dir_progress = float(files) / len(pdb_files)
+            
+            progress = max(file_progress, loop_progress, dir_progress)
+            print("Loading... %.2f%%" % (progress*100))
+
+            # Break if loop limit has been exceeded
+            if(loopLimit >= 0 and len(loops) >= loopLimit): break
+
+            # Break if file limit has been exceeded
+            if(fileLimit >= 0 and files >= fileLimit): break
+
+    return loops
 
 def create_loop_bins(unordered_loops):
     """
@@ -20,6 +109,7 @@ def create_loop_bins(unordered_loops):
     > NOTE: we currently require loops to be the exact same size if we are to compare them. 
         [YoonJoo told us to consider bins with ranges of lengths (1-3, 4-7, 8-12, etc.)]
     > NOTE: flanking SSEs should be exactly the same when we compare loops.
+    @author: Travis Peters
      """
     # Create bins by loop length
     loop_bins_by_length = length_cluster(unordered_loops)
@@ -133,97 +223,14 @@ def compute_score_naive(bin_clusters, first_only=False):
     
 
 if __name__ == '__main__':
-    LOOP_LIMIT = -1
-    FILE_LIMIT = 500
-    
-    
-    files = 0
-
-    ###############
-    # DEBUG FLAGS #
-    ###############
-    # Indicates whether or not to write extracted loop info to console
-    display_file_debug = True
-
-    # Indicates whether or not to write extracted loop info to console
-    display_loop_debug = False
-
-    # Indicates whether or not to write Model representations of loops to console
-    display_loop_model_debug = False
         
     ###########################################################################
     # Initial loop extraction
     ###########################################################################
-    
-    # General container for all extracted Loop Structures
-    loops = []
-    
-    pdb_dir = os.listdir("pdb")
-    
-    # Iterate over each file in the PDB directory
-    for f in pdb_dir:
-        
-        # If the file is in fact a PDB file, attempt to extract the Loop Structures
-        if(f.endswith(".pdb")):
-            
-            if display_file_debug: 
-                print "Loading loops from file: " + f + "...";   
-            
-            # Get the loop candidates from a PDB file
-            try:
-                l_cand = get_loops("pdb/" + f)
-            except:
-                continue
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
 
-            # Check each extract loop and determine if it is a valid loop (i.e. has left/right anchor)            
-            for loop in l_cand:
-
-                # Debug: Write loop info to console
-                if display_loop_debug:
-                    la = ""
-                    if len(loop.l_anchor) > 0:
-                        la = "["
-                        for a in loop.l_anchor:
-                            la += str(a) + ","
-                        la = la[0:-1] + "]"
-                    else:
-                        la = "[]"
-    
-                    ra = ""
-                    if len(loop.r_anchor) > 0:
-                        ra = "["
-                        for a in loop.r_anchor:
-                            ra += str(a) + ","
-                        ra = ra[0:-1] + "]"
-                    else:
-                        ra = "[]"
-
-                    print "[" + la + "," + ra + "]"
-
-                # If both the left & right anchor exist, we will consider this loop to be
-                # a valid Loop Structure (i.e. this loop is not an "end point")
-                if(len(loop.l_anchor) >= 1 and len(loop.r_anchor) >= 1) and not (len(loop.atoms) < 7 or len(loop.atoms) > 9):
-                    loops.append(loop)
-            
-            #We've read a file in, note that
-            files += 1
-            
-            # Debug: After each file, print the updated amount of loops
-            if display_file_debug:
-                print " > Total Loops:", len(loops)
-            
-            #Display progress:
-            file_progress = float(files) / FILE_LIMIT
-            loop_progress = float(len(loops)) / LOOP_LIMIT
-            dir_progress = float(files) / len(pdb_dir)
-            
-            progress = max(file_progress, loop_progress, dir_progress)
-            print("Loading... %.2f%%" % (progress*100))
-
-            # ? (why would we break after finding 200-ish loops?)
-            if(LOOP_LIMIT >= 0 and len(loops) >= LOOP_LIMIT): break
-
-            if(FILE_LIMIT >= 0 and files >= FILE_LIMIT): break
+    # Indicates whether or not to write Model representations of loops to console
+    display_loop_model_debug = False
 
     # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
     if display_loop_model_debug:
@@ -233,7 +240,6 @@ if __name__ == '__main__':
             model = Model.fromLoop(loop)
             print loop_num, ":", "<" + str(model.get_loops()) + ">" , model
             loop_num += 1
-
 
     ###########################################################################
     # "Bin up" Loop Structures (their Models, now...) by:
@@ -279,7 +285,7 @@ if __name__ == '__main__':
     for bc in valid_bin_clusters:
         prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
 
-    ## Display results #################################################################
+    ## Display results ########################################################
     sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
     TOP_SCORES = 5
     for modelNum, model in enumerate(prediction_scores):
@@ -288,11 +294,9 @@ if __name__ == '__main__':
         # Only display a total of TOP_SCORES of the best models/scores
         if modelNum >= TOP_SCORES-1: break
 
-
     generate_histogram_data(bin_clusters)
     compute_score_naive(bin_clusters)        
-    ####################################################################################
-    
+    ###########################################################################
    
     ###########################################################################
     # Cross-Validation - input known loop sequences and determine how 
