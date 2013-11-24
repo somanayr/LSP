@@ -8,12 +8,13 @@ from protein_structure import rmsd
 from numpy.lib.scimath import arccos
 import transform
 from numpy.ma.core import negative
+from test.double_const import PI
 
 class Model:
     
-    __phi = [float("inf"), float("-inf")]
-    __theta = [float("inf"), float("-inf")]
-    __anchor_dist = [float("inf"), float("-inf")]
+    __phi = [0, 2*PI]
+    __theta = [0, 2*PI]
+    __anchor_dist = [0, float("-inf")]
     
 #     def __init__(self, parents, positions, sses, ssesSignature, seq, size):
 #         '''
@@ -56,8 +57,8 @@ class Model:
         
         anchor_dist = norm(offset_v)
         
-        update_min_max(phi, Model.__phi)
-        update_min_max(theta, Model.__theta)
+#         update_min_max(phi, Model.__phi)
+#         update_min_max(theta, Model.__theta)
         update_min_max(anchor_dist, Model.__anchor_dist)
         
         return Model([loop], [Vec.from_array(sFrame.transformInto(atom)) for atom in loop.atoms], theta, phi, anchor_dist, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
@@ -91,11 +92,11 @@ class Model:
                      ]
         
         
-        print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
-        print m1.size, m2.size
-        print m1.positions
-        print m2.positions
-        print positions
+#         print "\nMerging! (%f)" % m1.compare(m2, verbose=True)
+#         print m1.size, m2.size
+#         print m1.positions
+#         print m2.positions
+#         print positions
         
         
         
@@ -119,7 +120,7 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other, max_rmsd=2, verbose=False):
+    def compare(self, other, max_rmsd=2, perc_cutoff=.05, verbose=False):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
@@ -133,11 +134,11 @@ class Model:
             print "Position size mismatch!"
             return float('inf')
 
-        return self.__compute_scores(other, max_rmsd=max_rmsd, verbose=verbose)
+        return self.__compute_scores(other, max_rmsd=max_rmsd, perc_cutoff=perc_cutoff, verbose=verbose)
         
         
         
-    def __compute_scores(self, other, max_rmsd=2, verbose=False):
+    def __compute_scores(self, other, max_rmsd=2, perc_cutoff=.05, verbose=False):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
         #Average RMSD
         avg_rmsd = 0
@@ -156,20 +157,20 @@ class Model:
             return float('inf')
         
         #Compute score
-        anchor_dist_score = perc_diff(self.anchor_dist, other.anchor_dist, *Model.__anchor_dist)
+        anchor_dist_score = perc_diff(self.anchor_dist, other.anchor_dist, 0, max_anchor_dist(len(self.seq)))
         phi_score = perc_diff(self.phi, other.phi, *Model.__phi)
         theta_score = perc_diff(self.theta, other.theta, *Model.__theta)
         
         #Result cutoffs. Must be 95% similarity
-        if max_rmsd > 0 and anchor_dist_score > .05:
+        if max_rmsd > 0 and anchor_dist_score > perc_cutoff:
             if(verbose): print "Anchor distance mismatch! abs(%f-%f) > %f" % (self.anchor_dist, other.anchor_dist, max_rmsd) 
             return float('inf')
          
-        if max_rmsd > 0 and phi_score > .05:
+        if max_rmsd > 0 and phi_score > perc_cutoff:
             if(verbose): print "Phi mismatch! abs(%f-%f) > %f" % (self.phi, other.phi, max_rmsd) 
             return float('inf')
          
-        if max_rmsd > 0 and theta_score > .05:
+        if max_rmsd > 0 and theta_score > perc_cutoff:
             if(verbose): print "Theta mismatch! abs(%f-%f) > %f" % (self.theta, other.theta, max_rmsd) 
             return float('inf')
         
@@ -261,11 +262,11 @@ class Model:
         
     def __str__(self):
         
-        return ("Model[\n\tsize=%d,\n\tsignature=%s,\n\tsses=[\n\t\t%s,\n\t\t%s\n\t]\n\tloop_len=%d,\n\tseq=%s,\n\tpositions=%s\n]" % (
+        return ("Model[\n\tsize=%d,\n\tsignature=%s,\n\tphi=%f,\n\ttheta=%s\n\tloop_len=%d,\n\tseq=%s,\n\tpositions=%s\n]" % (
                                                                                         self.size,
                                                                                         str(self.ssesSignature),
-                                                                                        str([Vec(sses) for sses in self.sses[0]]),
-                                                                                        str([Vec(sses) for sses in self.sses[1]]),
+                                                                                        self.phi,
+                                                                                        self.theta,
                                                                                         len(self.positions),
                                                                                         "[\n\t\t" + "\n\t\t".join([str(elem) for elem in self.seq]) + "\n\t]",
                                                                                         "[\n\t\t" + "\n\t\t".join([str(pos if type(pos) is Vec else Vec(pos)) for pos in self.positions]) + "\n\t]"
@@ -286,11 +287,12 @@ def weighted_average(a,b,w1,w2):
     return a*w1 + b*w2
 
 def perc_diff(a,b,mn,mx):
-    """Converts a,b to percentage from mx to mn, then returns the difference."""
-    if(a > mx or a < mn):
-        raise Exception("a (%s) out of bounds [%s,%s]" % (a, mn, mx))
-    if(b > mx or b < mn):
-        raise Exception("b (%s) out of bounds [%s,%s]" % (b, mn, mx))
+    """a,b are values. mn is the ideal minimum for that value type, mx the ideal maximum.
+    Converts a,b to percentage from mx to mn, then returns the difference."""
+#     if(a > mx or a < mn):
+#         raise Exception("a (%s) out of bounds [%s,%s]" % (a, mn, mx))
+#     if(b > mx or b < mn):
+#         raise Exception("b (%s) out of bounds [%s,%s]" % (b, mn, mx))
     
     dif = mx-mn
     
@@ -304,3 +306,16 @@ def update_min_max(x, min_max_ar):
     """Takes a min/max array [min,max] and a value to update the array with"""
     min_max_ar[0] = min(x, min_max_ar[0])
     min_max_ar[1] = max(x, min_max_ar[1])
+    
+    
+    
+###Constants taken from https://peerj.com/articles/1
+gamma = 6.046
+delta = 3.46
+def max_anchor_dist(n):
+    """Computes the maximum theoretical anchor distance, also known as the maximum span for a given number of residues n.
+    Formula taken from https://peerj.com/articles/1"""
+    if n % 2 == 0: #n even
+        return gamma * (n/2.0 - 1) + delta
+    else: #n odd
+        return gamma * (n - 1.0) / 2

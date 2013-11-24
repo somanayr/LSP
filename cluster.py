@@ -102,7 +102,7 @@ def sse_similarity_cluster(loops_by_size):
 
     return bins
 
-def hierarchical(models):
+def hierarchical(models, perc_cutoff=.05):
     """
 	given a list of loop Models, return a tree (nested lists)
 	encoding a hierarchical clustering of the models
@@ -120,7 +120,7 @@ def hierarchical(models):
     active_subtrees = make_treelist(models) #nothing is merged yet, so all are active
     
     #populate the queue with all unique subtree pairs, keyed by distance apart
-    initialize_queue(dist_q, active_subtrees)
+    initialize_queue(dist_q, active_subtrees, perc_cutoff=perc_cutoff)
     
     #keep merging until there's only one active tree left
     while (len(active_subtrees) > 1):
@@ -144,7 +144,7 @@ def hierarchical(models):
                 #to include the new subtree
                 #print("Merging %s, %s, %f" % (str(sub1[1]), str(sub2[1]), sub1[1].compare(sub2[1])))
                 merged = merge(sub1, sub2) 
-                update_queue(dist_q, merged, active_subtrees)
+                update_queue(dist_q, merged, active_subtrees, perc_cutoff=perc_cutoff)
                 active_subtrees.append(merged)
     
     #if we arrive at this point, then everything clustered together;
@@ -168,7 +168,7 @@ def make_treelist(m_list):
     return tree_list
 
 
-def initialize_queue(q, model_list):
+def initialize_queue(q, model_list, perc_cutoff=.05):
     """
     helper function to initialize a priority queue from a list of Models
     by populating it with entries for each unique model pair
@@ -182,7 +182,7 @@ def initialize_queue(q, model_list):
             sub2 = model_list[j]
             
             #find pair-distance and format as a tuple, then store in queue
-            dist = sub1[1].compare(sub2[1]) #score how similar the representative models are
+            dist = sub1[1].compare(sub2[1], perc_cutoff) #score how similar the representative models are
             entry = (sub1, sub2)
             q.put(entry, dist)
 
@@ -190,13 +190,13 @@ def initialize_queue(q, model_list):
 #helper function to update a priority queue, with all new unique pairs
 #given a new subtree, a list of still active subtrees, and a reference
 #to the priority queue to be updated
-def update_queue(q, new_tree, active_subtrees):
+def update_queue(q, new_tree, active_subtrees, perc_cutoff=.05):
     new_model = new_tree[1] #retrieve location info for the new subtree
     
     #iterate over each active subtree
     for tree in active_subtrees:
         model = tree[1]
-        dist = new_model.compare(model) #find distance to new subtree
+        dist = new_model.compare(model, perc_cutoff=perc_cutoff) #find distance to new subtree
         q.put((tree, new_tree), dist) #update the queue with new pair entry
 
 

@@ -149,10 +149,11 @@ def generate_histogram_data(bin_clusters):
             
 
     
-def compute_score_naive(bin_clusters, first_only=False):
+def compute_score_naive(bin_clusters, first_only=True):
 ##Naive testing - check if a loop gets placed into it's model
     total_model_score = 0
     total_structure_score = 0
+    total_partial_structure_score = [[0,0],[0,0]]
     total_clusters = len(bin_clusters)
     for bc in bin_clusters:
         bin_data, models = bc
@@ -173,6 +174,7 @@ def compute_score_naive(bin_clusters, first_only=False):
         
         cluster_model_score = 0
         cluster_structure_score = 0
+        cluster_partial_structure_score = [[0,0],[0,0]]
         for loop in loop_set:
             scores = classify_loop_seq(loop.seq, models, blosum62)
             scores = sorted(scores, key=lambda x:-x[1])
@@ -183,11 +185,13 @@ def compute_score_naive(bin_clusters, first_only=False):
                 structure_score = 0.0
                 tries = 0 #start at 1 so no div by zero stuff
                 
+                
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
+                
                 #Iterate until we find the match
                 for score in scores:
                     temp_loop_set = []
                     score[0].get_loops(temp_loop_set)
-                    structure_score += score[0].compare(model, max_rmsd=-1, verbose=True)
                     if loop in temp_loop_set: #is match
                         break 
                     tries+=1
@@ -202,6 +206,11 @@ def compute_score_naive(bin_clusters, first_only=False):
                 structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
                 if loop in temp_loop_set:
                     model_score = 1.0
+                    cluster_partial_structure_score[0][0] += structure_score
+                    cluster_partial_structure_score[0][1] += 1
+                else:
+                    cluster_partial_structure_score[1][0] += structure_score
+                    cluster_partial_structure_score[1][1] += 1
             
             
             print "Loop score: (%f, %f)" % (model_score, structure_score)
@@ -211,15 +220,35 @@ def compute_score_naive(bin_clusters, first_only=False):
             
         cluster_model_score /= len(loop_set)
         cluster_structure_score /= len(loop_set)
+        
+        try:
+            cluster_partial_structure_score[0] = cluster_partial_structure_score[0][0] / cluster_partial_structure_score[0][1]
+            
+            total_partial_structure_score[0][0] += cluster_partial_structure_score[0]
+            total_partial_structure_score[0][1] += 1
+        except:
+            pass
+        
+        try:    
+            cluster_partial_structure_score[1] = cluster_partial_structure_score[1][0] / cluster_partial_structure_score[1][1]
+            
+            total_partial_structure_score[1][0] += cluster_partial_structure_score[1]
+            total_partial_structure_score[1][1] += 1
+        except:
+            pass
+            
         print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
         
         total_model_score += cluster_model_score
         total_structure_score += cluster_structure_score
+        
+        
+        
     
     if(total_clusters != 0):
         total_model_score /= total_clusters
         total_structure_score /= total_clusters
-        print("Total score: (%f, %f)" % (total_model_score, total_structure_score))
+        print("Total score: (%f, %f (%f, %f))" % (total_model_score, total_structure_score, total_partial_structure_score[0][0] / total_partial_structure_score[0][1], total_partial_structure_score[1][0] / total_partial_structure_score[1][1]))
     else:
         print("Insufficient data to compute score")
     
@@ -258,46 +287,50 @@ if __name__ == '__main__':
     
     # Bin_Clusters is a list of tubles where the first element is the bin tuple
     # and the second element is the clusters returned from hierarchical clustering.
-    bin_clusters = []
-    for bin in bins:
-        #print "Bin:", (bin[0], bin[1], len(bin[2])) 
-        clusters = hierarchical(bin[2])
-        bin_clusters.append((bin, clusters))
-
-#         # Debug: Display the representative model(s) resulting from clustering
-#         print "\n\n\n\n----Results----"
-#         for model in clusters:
-#             print model
-# 
-#         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
+    x = 0.0
+    while x < .2:
+        x += .01
+        print ("########perc_cutoff=%f" % x) + "###########"
+        bin_clusters = []
+        for bin in bins:
+            #print "Bin:", (bin[0], bin[1], len(bin[2])) 
+            clusters = hierarchical(bin[2], perc_cutoff=x)
+            bin_clusters.append((bin, clusters))
     
-    ###########################################################################
-    # Classify - given an input (loop) sequence, match it to some loop cluster
-    # or inform user that the loop cannot be characterized
-    ###########################################################################
-    test_seq = "NGEMFT"
-    print "> Input Sequence:", test_seq, "with length:", len(test_seq)
-    
-    # First, eliminate bins that don't have sequences with the same length as
-    # the input sequence.
-    valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
-
-    # Now use the valid clusters to attempt to classify the input sequence.
-    prediction_scores = []
-    for bc in valid_bin_clusters:
-        prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
-
-    ## Display results ########################################################
-    sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
-    TOP_SCORES = 5
-    for modelNum, model in enumerate(prediction_scores):
-        print "Model Score:", model[1], "\n", model[0]
+    #         # Debug: Display the representative model(s) resulting from clustering
+    #         print "\n\n\n\n----Results----"
+    #         for model in clusters:
+    #             print model
+    # 
+    #         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
         
-        # Only display a total of TOP_SCORES of the best models/scores
-        if modelNum >= TOP_SCORES-1: break
-
-    generate_histogram_data(bin_clusters)
-    compute_score_naive(bin_clusters)
+        ###########################################################################
+        # Classify - given an input (loop) sequence, match it to some loop cluster
+        # or inform user that the loop cannot be characterized
+        ###########################################################################
+        test_seq = "NGEMFT"
+        print "> Input Sequence:", test_seq, "with length:", len(test_seq)
+        
+        # First, eliminate bins that don't have sequences with the same length as
+        # the input sequence.
+        valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
+    
+        # Now use the valid clusters to attempt to classify the input sequence.
+        prediction_scores = []
+        for bc in valid_bin_clusters:
+            prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
+    
+        ## Display results ########################################################
+        sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
+        TOP_SCORES = 5
+        for modelNum, model in enumerate(prediction_scores):
+            print "Model Score:", model[1], "\n", model[0]
+            
+            # Only display a total of TOP_SCORES of the best models/scores
+            if modelNum >= TOP_SCORES-1: break
+    
+        generate_histogram_data(bin_clusters)
+        compute_score_naive(bin_clusters)
     ###########################################################################
    
     ###########################################################################
