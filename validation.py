@@ -115,7 +115,7 @@ def xval(loops, classify, nfold=5, nrep=10, perc_cutoff=.05):
         median_mu = mean(median_fold_scores)
         median_scores.append(median_mu)
         
-        mu = mean(median_fold_scores)        
+        mu = mean(mean_fold_scores)        
         scores.append(mu)
         
         # Rep. Debug 
