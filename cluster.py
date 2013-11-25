@@ -182,7 +182,7 @@ def initialize_queue(q, model_list, perc_cutoff=.05):
             sub2 = model_list[j]
             
             #find pair-distance and format as a tuple, then store in queue
-            dist = sub1[1].compare(sub2[1], perc_cutoff) #score how similar the representative models are
+            dist = sub1[1].compare(sub2[1], perc_cutoff=perc_cutoff) #score how similar the representative models are
             entry = (sub1, sub2)
             q.put(entry, dist)
 
