@@ -171,7 +171,7 @@ def compute_score_naive(bin_clusters, first_only=True):
                 tries = 0 #start at 1 so no div by zero stuff
                 
                 
-                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=False)
                 
                 #Iterate until we find the match
                 for score in scores:
@@ -188,7 +188,7 @@ def compute_score_naive(bin_clusters, first_only=True):
                 temp_loop_set = []
                 scores[0][0].get_loops(temp_loop_set)
                 model_score = 0.0
-                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=False)
                 if loop in temp_loop_set:
                     model_score = 1.0
                     cluster_partial_structure_score[0][0] += structure_score
@@ -240,6 +240,14 @@ def compute_score_naive(bin_clusters, first_only=True):
 
 if __name__ == '__main__':
     
+    ###########################################################################    
+    # TODO: Implement user interaction. User should be able to enter
+    # information about a loop:
+    #   - loop sequence
+    #   - left/right SSE anchor types
+    # and have information about predicted structure returned. 
+    ###########################################################################
+        
     ###########################################################################
     # X-Val parameters
     ###########################################################################
@@ -267,36 +275,3 @@ if __name__ == '__main__':
         # Run Cross-Validation
         ###########################################################################    
         do_xval_knn(loops, k=1, nfold=FOLDS, nrep=REPS)
-
-    
-    ###########################################################################    
-    # TODO: Implement user interaction. User should be able to enter
-    # information about a loop:
-    #   - loop sequence
-    #   - left/right SSE anchor types
-    # and have information about predicted structure returned. 
-    ###########################################################################    
-
-    # Initial loop extraction
-#    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
- 
-    # "Bin up" Loop Structures (their Models, now...) by:
-    # (1) length --> all loops should be the same size
-    # (2) SSE Anchors --> only compare loops that are the same size and that 
-    #     have the same left/right anchors
-#    bins = create_loop_bins(loops)
-     
-    # Use hierarchical clustering to form loop similarity clusters
-    # > Note: loops are clustered within their individual bins. 
-    # > Note: Bin_Clusters is a list of tubles where the first element is the 
-    #  bin tuple and the second element is the clusters returned from 
-    #  hierarchical clustering.
-#     bin_clusters = []
-#     for bin in bins:
-#         print "Bin:", (bin[0], bin[1], len(bin[2])) 
-#         clusters = hierarchical(bin[2])
-#         bin_clusters.append((bin, clusters))
-#         print " >", len(clusters)
-#     
-#     generate_histogram_data(bin_clusters)
-#     compute_score_naive(bin_clusters)

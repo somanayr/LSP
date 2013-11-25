@@ -12,25 +12,13 @@ from test.double_const import PI
 
 class Model:
     
+    #Print lots of stuff?
     verbose = False
     
+    #Maxima and minima
     __phi = [0, 2*PI]
     __theta = [0, 2*PI]
-    __anchor_dist = [0, float("-inf")]
     
-#     def __init__(self, parents, positions, sses, ssesSignature, seq, size):
-#         '''
-#         Generates a model from list of similar loops, loops
-#         '''
-#         self.parents = parents
-#         self.positions = positions
-#         self.sses = sses
-#         self.ssesSignature = ssesSignature
-#         self.seq = seq
-#         self.size = size
-#         self.__loops = None #lazy loaded, not safe to call, use get_loops instead
-#         
-
     def __init__(self, parents, positions, theta, phi, anchor_dist, ssesSignature, seq, size):
         self.parents = parents
         self.positions = positions
@@ -50,24 +38,16 @@ class Model:
         sse0_v = Model.__get_sse_vector(loop.l_anchor, loop.atoms[0])
         sse1_v = Model.__get_sse_vector(loop.r_anchor, loop.atoms[-1]) 
 
-        
         sFrame = TransformFrame.createFromVectors(loop.l_anchor[0], transform.Vec.from_array(offset_v), transform.Vec.from_array(sse0_v))
         
         #Theta and phi are the angles between the SSE and anchor-anchor vector
         theta = arccos(dot(sse0_v, negative(offset_v)) / (norm(sse0_v) * norm(offset_v)))
         phi = arccos(dot(sse1_v, offset_v) / (norm(sse1_v) * norm(offset_v)))
         
+        #Length of the vectorn
         anchor_dist = norm(offset_v)
         
-#         update_min_max(phi, Model.__phi)
-#         update_min_max(theta, Model.__theta)
-        update_min_max(anchor_dist, Model.__anchor_dist)
-        
         return Model([loop], [Vec.from_array(sFrame.transformInto(atom)) for atom in loop.atoms], theta, phi, anchor_dist, [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]) , 1)
-
-        
-#         sses = sorted([(loop.l_type, loop.l_anchor), (loop.r_type, loop.r_anchor)])
-#         return Model([loop], loop.atoms, [loop.l_anchor, loop.r_anchor], [loop.l_type, loop.r_type], Model.__gen_seq([loop.seq]), 1)
         
     @classmethod
     def fromModels(cls, m1, m2):
@@ -159,7 +139,7 @@ class Model:
             oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
             avg_rmsd += rmsd(sPoint, oPoint)
         avg_rmsd /= len(self.positions)
-        
+        avg_rmsd = 0
         #Cutoffs
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 
@@ -294,11 +274,6 @@ def weighted_average(a,b,w1,w2):
 def perc_diff(a,b,mn,mx):
     """a,b are values. mn is the ideal minimum for that value type, mx the ideal maximum.
     Converts a,b to percentage from mx to mn, then returns the difference."""
-#     if(a > mx or a < mn):
-#         raise Exception("a (%s) out of bounds [%s,%s]" % (a, mn, mx))
-#     if(b > mx or b < mn):
-#         raise Exception("b (%s) out of bounds [%s,%s]" % (b, mn, mx))
-    
     dif = mx-mn
     
     #compute percents

@@ -102,7 +102,7 @@ def sse_similarity_cluster(loops_by_size):
 
     return bins
 
-def hierarchical(models, perc_cutoff=.05):
+def hierarchical(models, perc_cutoff=.02):
     """
 	given a list of loop Models, return a tree (nested lists)
 	encoding a hierarchical clustering of the models
@@ -168,7 +168,7 @@ def make_treelist(m_list):
     return tree_list
 
 
-def initialize_queue(q, model_list, perc_cutoff=.05):
+def initialize_queue(q, model_list, perc_cutoff=.02):
     """
     helper function to initialize a priority queue from a list of Models
     by populating it with entries for each unique model pair
@@ -190,7 +190,7 @@ def initialize_queue(q, model_list, perc_cutoff=.05):
 #helper function to update a priority queue, with all new unique pairs
 #given a new subtree, a list of still active subtrees, and a reference
 #to the priority queue to be updated
-def update_queue(q, new_tree, active_subtrees, perc_cutoff=.05):
+def update_queue(q, new_tree, active_subtrees, perc_cutoff=.02):
     new_model = new_tree[1] #retrieve location info for the new subtree
     
     #iterate over each active subtree
@@ -202,7 +202,7 @@ def update_queue(q, new_tree, active_subtrees, perc_cutoff=.05):
 
 #helper function to determine whether two clusters are similar
 #enough to be merged
-def mergeable(sub1, sub2, perc_cutoff=0.05):
+def mergeable(sub1, sub2, perc_cutoff=0.02):
     """Returns true if two clusters are similar enough to be merged.
     Depends on Model's compare() function returning infinity if the RMSD
     between representative loop structures is above the given threshold."""
