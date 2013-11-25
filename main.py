@@ -17,7 +17,7 @@ def extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=50):
     ###########################################################################
 
     # Indicates whether or not to write extracted loop info to console
-    display_file_debug = True
+    display_file_debug = False
 
     # Indicates whether or not to write extracted loop info to console
     display_loop_debug = False
@@ -94,7 +94,8 @@ def extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=50):
             dir_progress = float(files) / len(pdb_files)
             
             progress = max(file_progress, loop_progress, dir_progress)
-            print("Loading... %.2f%%" % (progress*100))
+            if display_file_debug:
+                print("Loading... %.2f%%" % (progress*100))
 
             # Break if loop limit has been exceeded
             if(loopLimit >= 0 and len(loops) >= loopLimit): break
@@ -115,24 +116,9 @@ def create_loop_bins(unordered_loops):
     # Create bins by loop length
     loop_bins_by_length = length_cluster(unordered_loops)
 
-    # Debug: (bins are currently only built only by loop size)
-#     for bin_id in loop_bins_by_length:
-#         print "Bin w/ Loops of Size:", bin_id
-#         for loop in loop_bins_by_length[bin_id]:
-#             print loop
-#     
     # Create bins by using loop length info & discriminating between flanking SSEs
     bins = sse_similarity_cluster(loop_bins_by_length)
 
-    # Debug: (bins are built by both loop size & flanking SSE)
-#     s = 0
-#     for bin in bins:
-#         print "Bin Length:", bin[0], " & Bin Type:", bin[1], " & # Loops:", len(bin[2])
-#         #print " > Loops:", [l. for l in bin[2]]
-#         s += len(bin[2])
-#         
-#     print "\nTotal Bins: " + str(len(bins)) + " - Total Loops: " + str(s)
-    
     return bins
 
 
