@@ -1,4 +1,4 @@
-from main import create_loop_bins, extract_loops_from_dir
+from main import *
 from cluster import hierarchical
 from classify import knn
 from time import time
@@ -52,18 +52,27 @@ def xval(loops, classify, nfold=5, nrep=10, perc_cutoff=.05):
     # Hold scores over each rep
     median_scores = []
     scores = []
+
+    # Baseline testing
+    rand_median_scores = []
+    rand_scores = []
     
     for rep in range(nrep):
-        print "================================================================"
+        #print "================================================================"
         #print('rep %d\n'%rep)
-        rep_start_time = time()
+        #rep_start_time = time()
         
         # Split into folds & cross validate the classifier (repeatedly split and predict)    
         folds = make_rand_folds(loops, nfold)
 
         # Iterate over each fold, holding each one as the "test" fold
         median_fold_scores = [0.0]*nfold
-        mean_fold_scores = [0.0]*nfold        
+        mean_fold_scores = [0.0]*nfold 
+        
+        # Baseline testing
+        rand_median_fold_scores = [0.0]*nfold
+        rand_mean_fold_scores = [0.0]*nfold 
+               
         fold = 0
         for test_loops in folds:
             #print "Fold: ", fold
@@ -97,9 +106,13 @@ def xval(loops, classify, nfold=5, nrep=10, perc_cutoff=.05):
             ###########################################################################
             # Classify - given an input (loop) sequence, match it to some loop cluster
             ###########################################################################
-            classify_results = classify(training_bin_clusters, test_loops)            
+            classify_results = classify(training_bin_clusters, test_loops, randFlag=False)            
             _, cmp_scores = zip(*classify_results)
-                        
+
+            # Baseline testing - random selection
+            rand_classify_results = classify(training_bin_clusters, test_loops, randFlag=True)            
+            _, rand_cmp_scores = zip(*rand_classify_results)
+
             ###########################################################################
             # Analyze - record performance 
             ###########################################################################
@@ -107,34 +120,50 @@ def xval(loops, classify, nfold=5, nrep=10, perc_cutoff=.05):
             # Record median/mean score over each folds for this rep
             median_fold_scores[fold] = median(cmp_scores)
             mean_fold_scores[fold] = mean(cmp_scores)
+
+            # Record median/mean for baseline testing
+            rand_median_fold_scores[fold] = median(rand_cmp_scores)
+            rand_mean_fold_scores[fold] = mean(rand_cmp_scores) 
                 
             # Update the processed fold count
             fold += 1
 
-        # Record mean of the median values returned from x-val on the previous folds.        
+        # Record mean of the median values & true mean returned from x-val on the previous folds.        
         median_mu = mean(median_fold_scores)
         median_scores.append(median_mu)
         
         mu = mean(mean_fold_scores)        
         scores.append(mu)
+
+        # Record mean of the median values & true mean returned from baseline x-val on the previous folds.        
+        rand_median_mu = mean(rand_median_fold_scores)
+        rand_median_scores.append(rand_median_mu)
         
-        # Rep. Debug 
-        print "Rep.", rep, "Stats:"
-        print " > mean of medians =", median_mu
-        print " > true mean       =", mu
-        print " > execution time  =", time() - rep_start_time, "seconds"
+        rand_mu = mean(rand_mean_fold_scores)        
+        rand_scores.append(rand_mu)
+        
+        # Rep. Debug #############################################################
+        #print "Rep.", rep, "Stats:"
+        #print " > mean of medians          =", median_mu
+        #print " > true mean                =", mu
+        #print " > [random] mean of medians =", rand_median_mu
+        #print " > [random] true mean       =", rand_mu
+        #print " > execution time           =", time() - rep_start_time, "seconds"
+        ##########################################################################
 
     print "================================================================"
-    print "average median score: {:.5f}".format((sum(median_scores) / float(len(median_scores))))
-    print "average score       : {:.5f}".format((sum(scores) / float(len(scores))))
+    print "average median score         : {:.5f}".format((sum(median_scores) / float(len(median_scores))))
+    print "average score                : {:.5f}".format((sum(scores) / float(len(scores))))
+    print "[random] average median score: {:.5f}".format((sum(rand_median_scores) / float(len(rand_median_scores))))
+    print "[random] average score       : {:.5f}".format((sum(rand_scores) / float(len(rand_scores))))
 
-def do_xval_knn(loops, k=1, nfold=5, nrep=50, perc_cutoff=.05):
+def do_xval_knn(loops, k=1, nfold=5, nrep=50, perc_cutoff=.02):
     """
     Main for the classification cross-validation part.
     @author: cbk - modifications by Travis Peters
     """
     start_time = time()
-    xval(loops, lambda train, test: knn(train, test, k), nfold, nrep, perc_cutoff)    
+    xval(loops, lambda train, test, randFlag: knn(train, test, k, randFlag), nfold, nrep, perc_cutoff)    
     print "params : k=" + str(k) + ", nfold=" + str(nfold) + ", nrep=" + str(nrep) + ", perc_cutoff=" + str(perc_cutoff) 
     print "================================================================"
     print "\nTotal Execution Time:", time() - start_time, "seconds"
@@ -145,22 +174,27 @@ if __name__ == '__main__':
     ###########################################################################
     # X-Val parameters
     ###########################################################################
-    FILES = 500
-    LOOPS = -1
-    FOLDS = 5
-    REPS  = 50
+    LOOP_SET = [200, 500, 1000, 2000, 5000]
+    FILES    = -1
+    LOOPS    = -1
+    FOLDS    = 5
+    REPS     = 10
 
-    ###########################################################################
-    # Initial loop extraction
-    ###########################################################################
-    start_time = time()
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=LOOPS, fileLimit=FILES)
-    print "\nData Load Time:", time() - start_time, "seconds"
-
-    print "\nTotal Files:", FILES, "Total Loops:", len(loops), "\n"
-
-    ###########################################################################
-    # Run Cross-Validation
-    ###########################################################################    
-    do_xval_knn(loops, k=1, nfold=FOLDS, nrep=REPS)
+    for l in LOOP_SET:
     
+        print "\n[Loop Set:", str(l) + "]"
+         
+        ###########################################################################
+        # Initial loop extraction
+        ###########################################################################
+        start_time = time()
+        loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=l, fileLimit=FILES)
+        print "\nData Load Time:", time() - start_time, "seconds"
+    
+        print "\nTotal Loops:", len(loops), "\n"
+    
+        ###########################################################################
+        # Run Cross-Validation
+        ###########################################################################    
+        do_xval_knn(loops, k=1, nfold=FOLDS, nrep=REPS)
+                
