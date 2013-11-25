@@ -267,7 +267,8 @@ if __name__ == '__main__':
     ###########################################################################
     # Initial loop extraction
     ###########################################################################
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
+    Model.verbose = False
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=1000)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False
@@ -300,47 +301,48 @@ if __name__ == '__main__':
     while x < .2:
         x += .01
         print ("########perc_cutoff=%f" % x) + "###########"
-        validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
-#         bin_clusters = []
-#         for bin in bins:
-#             #print "Bin:", (bin[0], bin[1], len(bin[2])) 
-#             clusters = hierarchical(bin[2], perc_cutoff=x)
-#             bin_clusters.append((bin, clusters))
-#     
-#     #         # Debug: Display the representative model(s) resulting from clustering
-#     #         print "\n\n\n\n----Results----"
-#     #         for model in clusters:
-#     #             print model
-#     # 
-#     #         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
-#         
-#         ###########################################################################
-#         # Classify - given an input (loop) sequence, match it to some loop cluster
-#         # or inform user that the loop cannot be characterized
-#         ###########################################################################
-#         test_seq = "NGEMFT"
-#         print "> Input Sequence:", test_seq, "with length:", len(test_seq)
-#         
-#         # First, eliminate bins that don't have sequences with the same length as
-#         # the input sequence.
-#         valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
-#     
-#         # Now use the valid clusters to attempt to classify the input sequence.
-#         prediction_scores = []
-#         for bc in valid_bin_clusters:
-#             prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
-#     
-#         ## Display results ########################################################
-#         sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
-#         TOP_SCORES = 5
-#         for modelNum, model in enumerate(prediction_scores):
-#             print "Model Score:", model[1], "\n", model[0]
-#             
-#             # Only display a total of TOP_SCORES of the best models/scores
-#             if modelNum >= TOP_SCORES-1: break
-#     
-#         generate_histogram_data(bin_clusters)
-#         compute_score_naive(bin_clusters)
+#         validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
+          
+        bin_clusters = []
+        for bin in bins:
+            #print "Bin:", (bin[0], bin[1], len(bin[2])) 
+            clusters = hierarchical(bin[2], perc_cutoff=x)
+            bin_clusters.append((bin, clusters))
+     
+    #         # Debug: Display the representative model(s) resulting from clustering
+    #         print "\n\n\n\n----Results----"
+    #         for model in clusters:
+    #             print model
+    # 
+    #         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
+         
+        ###########################################################################
+        # Classify - given an input (loop) sequence, match it to some loop cluster
+        # or inform user that the loop cannot be characterized
+        ###########################################################################
+        test_seq = "NGEMFT"
+        print "> Input Sequence:", test_seq, "with length:", len(test_seq)
+         
+        # First, eliminate bins that don't have sequences with the same length as
+        # the input sequence.
+        valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
+     
+        # Now use the valid clusters to attempt to classify the input sequence.
+        prediction_scores = []
+        for bc in valid_bin_clusters:
+            prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
+     
+        ## Display results ########################################################
+        sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
+        TOP_SCORES = 5
+        for modelNum, model in enumerate(prediction_scores):
+            print "Model Score:", model[1], "\n", model[0]
+             
+            # Only display a total of TOP_SCORES of the best models/scores
+            if modelNum >= TOP_SCORES-1: break
+     
+        generate_histogram_data(bin_clusters)
+        compute_score_naive(bin_clusters)
     ###########################################################################
    
     ###########################################################################
