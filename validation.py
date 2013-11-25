@@ -26,7 +26,10 @@ def make_rand_folds(data, nfold):
     return out
 
 def median(l):
-    """Compute median of a list."""
+    """
+    Compute median of a list.
+    @author: Travis Peters
+    """
     sorted_list = sorted(l)
     length = len(sorted_list)
     if not length % 2:
@@ -34,7 +37,10 @@ def median(l):
     return sorted_list[length / 2]
 
 def mean(l):
-    """Compute mean of a list."""
+    """
+    Compute mean of a list.
+    @author: Travis Peters
+    """
     return sum(l)/float(len(l))
 
 ###############################################################################
@@ -174,7 +180,8 @@ if __name__ == '__main__':
     ###########################################################################
     # X-Val parameters
     ###########################################################################
-    LOOP_SET = [200, 500, 1000, 2000, 5000]
+#    LOOP_SET = [200, 500, 1000, 2000, 5000]
+    LOOP_SET = [200, 500]
     FILES    = -1
     LOOPS    = -1
     FOLDS    = 5

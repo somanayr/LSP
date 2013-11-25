@@ -4,7 +4,8 @@ from model import Model
 from classify import classify_loop_seq
 from SubstitutionMatrix import blosum62
 import os
-import validation
+from validation import *
+from time import time
 
 def extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=50):
     """
@@ -132,12 +133,10 @@ def generate_histogram_data(bin_clusters):
             
     for key in sorted(data.keys()):
         print(str(key) + "\t" + str(data[key]))
-        
-            
 
     
 def compute_score_naive(bin_clusters, first_only=True):
-##Naive testing - check if a loop gets placed into it's model
+    ## Naive testing - check if a loop gets placed into it's model
     total_model_score = 0
     total_structure_score = 0
     total_partial_structure_score = [[0,0],[0,0]]
@@ -151,7 +150,6 @@ def compute_score_naive(bin_clusters, first_only=True):
             temp_loops = []
             model.get_loops(temp_loops)
             if(len(temp_loops) > 2): #reject exact and close to exact matches, why test what we know is going to hit 100%?
-#             if(True):
                 loop_set += temp_loops
         
         #Quit if we didn't find any suitable loops
@@ -199,9 +197,6 @@ def compute_score_naive(bin_clusters, first_only=True):
                     cluster_partial_structure_score[1][0] += structure_score
                     cluster_partial_structure_score[1][1] += 1
             
-            
-#             print "Loop score: (%f, %f)" % (model_score, structure_score)
-                    
             cluster_model_score += model_score
             cluster_structure_score += structure_score
             
@@ -224,14 +219,9 @@ def compute_score_naive(bin_clusters, first_only=True):
         except:
             pass
             
-#         print "Cluster score on bin %s, %d: (%f, %f) (bin size models=%d, loops=%d)" % (str(bc[0][1]), len(bc[0][2][0].seq), cluster_model_score, cluster_structure_score, len(models), len(loop_set))
-        
         total_model_score += cluster_model_score
         total_structure_score += cluster_structure_score
-        
-        
-        
-    
+
     if(total_clusters != 0):
         total_model_score /= total_clusters
         total_structure_score /= total_clusters
@@ -249,89 +239,64 @@ def compute_score_naive(bin_clusters, first_only=True):
     
 
 if __name__ == '__main__':
-        
+    
     ###########################################################################
+    # X-Val parameters
+    ###########################################################################
+#    LOOP_SET = [200, 500, 1000, 2000, 5000]
+    LOOP_SET = [200, 500]
+    FILES    = -1
+    LOOPS    = -1
+    FOLDS    = 5
+    REPS     = 10
+
+    for l in LOOP_SET:
+    
+        print "\n[Loop Set:", str(l) + "]"
+         
+        ###########################################################################
+        # Initial loop extraction
+        ###########################################################################
+        start_time = time()
+        loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=l, fileLimit=FILES)
+        print "\nData Load Time:", time() - start_time, "seconds"
+    
+        print "\nTotal Loops:", len(loops), "\n"
+    
+        ###########################################################################
+        # Run Cross-Validation
+        ###########################################################################    
+        do_xval_knn(loops, k=1, nfold=FOLDS, nrep=REPS)
+
+    
+    ###########################################################################    
+    # TODO: Implement user interaction. User should be able to enter
+    # information about a loop:
+    #   - loop sequence
+    #   - left/right SSE anchor types
+    # and have information about predicted structure returned. 
+    ###########################################################################    
+
     # Initial loop extraction
-    ###########################################################################
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
-
-    # Indicates whether or not to write Model representations of loops to console
-    display_loop_model_debug = False
-
-    # Debug: Display the Model representation of each Loop Structure extracted from the PDB extraction
-    if display_loop_model_debug:
-        print "\nModel Representations for Loop Structures:"
-        loop_num = 1
-        for loop in loops:
-            model = Model.fromLoop(loop)
-            print loop_num, ":", "<" + str(model.get_loops()) + ">" , model
-            loop_num += 1
-
-    ###########################################################################
+#    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
+ 
     # "Bin up" Loop Structures (their Models, now...) by:
     # (1) length --> all loops should be the same size
     # (2) SSE Anchors --> only compare loops that are the same size and that 
     #     have the same left/right anchors
-    ###########################################################################
-    bins = create_loop_bins(loops)
-    
-    ###########################################################################
+#    bins = create_loop_bins(loops)
+     
     # Use hierarchical clustering to form loop similarity clusters
-    # Note: loops are clustered within their individual bins. 
-    ###########################################################################
-    
-    # Bin_Clusters is a list of tubles where the first element is the bin tuple
-    # and the second element is the clusters returned from hierarchical clustering.
-    x = 0.0
-    while x < .2:
-        x += .01
-        print ("########perc_cutoff=%f" % x) + "###########"
-        validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
-#         bin_clusters = []
-#         for bin in bins:
-#             #print "Bin:", (bin[0], bin[1], len(bin[2])) 
-#             clusters = hierarchical(bin[2], perc_cutoff=x)
-#             bin_clusters.append((bin, clusters))
+    # > Note: loops are clustered within their individual bins. 
+    # > Note: Bin_Clusters is a list of tubles where the first element is the 
+    #  bin tuple and the second element is the clusters returned from 
+    #  hierarchical clustering.
+#     bin_clusters = []
+#     for bin in bins:
+#         print "Bin:", (bin[0], bin[1], len(bin[2])) 
+#         clusters = hierarchical(bin[2])
+#         bin_clusters.append((bin, clusters))
+#         print " >", len(clusters)
 #     
-#     #         # Debug: Display the representative model(s) resulting from clustering
-#     #         print "\n\n\n\n----Results----"
-#     #         for model in clusters:
-#     #             print model
-#     # 
-#     #         _ = raw_input('Press enter to run hierarchical clustering on the next bin...')
-#         
-#         ###########################################################################
-#         # Classify - given an input (loop) sequence, match it to some loop cluster
-#         # or inform user that the loop cannot be characterized
-#         ###########################################################################
-#         test_seq = "NGEMFT"
-#         print "> Input Sequence:", test_seq, "with length:", len(test_seq)
-#         
-#         # First, eliminate bins that don't have sequences with the same length as
-#         # the input sequence.
-#         valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
-#     
-#         # Now use the valid clusters to attempt to classify the input sequence.
-#         prediction_scores = []
-#         for bc in valid_bin_clusters:
-#             prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
-#     
-#         ## Display results ########################################################
-#         sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
-#         TOP_SCORES = 5
-#         for modelNum, model in enumerate(prediction_scores):
-#             print "Model Score:", model[1], "\n", model[0]
-#             
-#             # Only display a total of TOP_SCORES of the best models/scores
-#             if modelNum >= TOP_SCORES-1: break
-#     
-#         generate_histogram_data(bin_clusters)
-#         compute_score_naive(bin_clusters)
-    ###########################################################################
-   
-    ###########################################################################
-    # Cross-Validation - input known loop sequences and determine how 
-    # successfully we can map the loop sequence back to the correct
-    # cluster/model.
-    ###########################################################################
-    
+#     generate_histogram_data(bin_clusters)
+#     compute_score_naive(bin_clusters)
