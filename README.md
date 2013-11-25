@@ -3,15 +3,15 @@ LSP
 LSP is a project for Computer Science 75/175 at Dartmouth College which implements an algorithm for loop structure 
 prediction. 
 
-Our code and supporting materials are contained in the project LSP (short for “loop structure prediction). We 
+Our code and supporting materials are contained in the project LSP (short for loop structure prediction). We 
 acquired our loop data from Dr. Yoonjoo Choi; the provided dataset included protein sequence and structure 
 information for over 32,000 proteins in PDB file format. For our prediction algorithm, we first extract loop 
-sequence and structure data from the PDB files, along with information about each loop’s anchor points 
+sequence and structure data from the PDB files, along with information about each loop's anchor points 
 and flanking SSEs. We use this loop data to cluster the loops hierarchically into groups of structurally 
 similar loops, and then generate a representative probabilistic sequence for each of these loop families. 
 Once our source loop data has been clustered, we have the infrastructure necessary to classify new loops. 
 Given a new loop sequence, we first match it to the available loop clusters based on sequence similarity 
-to each cluster’s probabilistic sequence. To predict the loop’s structure, we then transfer the structural 
+to each cluster's probabilistic sequence. To predict the loop's structure, we then transfer the structural 
 characteristics of the most closely matched loop cluster to the new loop.
 
 Usage:
@@ -52,6 +52,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 Authors:
 ===
-Ryan Amos <Ryan.B.Amos.16@dartmouth.edu>
-Travis Peters <Travis.W.Peters.GR@dartmouth.edu>
-Serena Liu <serena.x.liu.14@dartmouth.edu>
+Ryan Amos <<Ryan.B.Amos.16@dartmouth.edu>>
+
+Travis Peters <<Travis.W.Peters.GR@dartmouth.edu>>
+
+Serena Liu <<serena.x.liu.14@dartmouth.edu>>
