@@ -122,12 +122,18 @@ class Model:
         else:
             return [sse_atoms[int((len(sse_atoms) * .25))].__dict__[c] - sse_atoms[int((len(sse_atoms).__dict__[c] * .75))] for c in 'xyz']
     
-    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
+    def compare(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=None):
         """
         Compares two models to each other. A higher score is worse. Both models MUST have:
         1) The same SSE identifier
         2) The same number of elements in the loop
         """
+        
+        if(verbose is None):
+            verbose = Model.verbose
+        else:
+            Model.verbose = verbose
+        
         #check validity
         if self.ssesSignature != other.ssesSignature:
             print "SSE signature mistmatch!"
@@ -140,8 +146,12 @@ class Model:
         
         
         
-    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=False):
+    def __compute_scores(self, other, max_rmsd=2, std_rmsd_cutoff=2, perc_cutoff=.05, verbose=None):
         """Private method do not call unless you know what you're doing! Computes how well our model matches up against the given data"""
+        
+        if verbose is None:
+            verbose = Model.verbose
+        
         #Average RMSD
         avg_rmsd = 0
         for i in range(len(self.positions)):
@@ -174,16 +184,11 @@ class Model:
             return float('inf')
         
         if(verbose): print anchor_dist_score, phi_score, theta_score, avg_rmsd/std_rmsd_cutoff * perc_cutoff
+        
         result = anchor_dist_score + phi_score + theta_score + avg_rmsd/std_rmsd_cutoff * perc_cutoff
         
-#         print "Score %f + %f + %f = %f" % (anchor_dist_score, phi_score, theta_score, result)
         
         return result
-        
-        #Using eculdian distance... is there a better way to do this?
-        #I figure anchor d is the biggest value, and that's the one we want weighted the most heavily
-        #Perhaps there's some kind of correlation constant or something that compares how close two things are based on how close they are to the average of the two... like variance or something? This will overestimate how similar small things are
-#         return (self.anchor_dist - other.anchor_dist) * (self.anchor_dist - other.anchor_dist) + (self.phi - other.phi) * (self.phi - other.phi) + (self.theta - other.theta) * (self.theta - other.theta) + avg_rmsd;
     
     def get_loops(self, loops):
         """Finds loops from this and all parent sequences and dumps them into loops. Lazy loads loops"""
