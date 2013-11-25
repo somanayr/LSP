@@ -300,7 +300,7 @@ if __name__ == '__main__':
     while x < .2:
         x += .01
         print ("########perc_cutoff=%f" % x) + "###########"
-        validation.do_xval_knn(loops, nfold=5, nrep=1, perc_cutoff=x)
+        validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
 #         bin_clusters = []
 #         for bin in bins:
 #             #print "Bin:", (bin[0], bin[1], len(bin[2])) 

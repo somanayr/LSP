@@ -133,7 +133,7 @@ def hierarchical(models, perc_cutoff=.05):
             #if the subtree pair is too different to be mergeable, then
             #all other pairs will also be too different (since the PriQ is
             #keyed by distance). In this case, return final cluster list.
-            if not (mergeable(sub1, sub2)):
+            if not (mergeable(sub1, sub2, perc_cutoff=perc_cutoff)):
                 return [sub[1] for sub in active_subtrees]
             
             else:
@@ -202,11 +202,11 @@ def update_queue(q, new_tree, active_subtrees, perc_cutoff=.05):
 
 #helper function to determine whether two clusters are similar
 #enough to be merged
-def mergeable(sub1, sub2):
+def mergeable(sub1, sub2, perc_cutoff=0.05):
     """Returns true if two clusters are similar enough to be merged.
     Depends on Model's compare() function returning infinity if the RMSD
     between representative loop structures is above the given threshold."""
-    return sub1[1].compare(sub2[1]) != float("inf")
+    return sub1[1].compare(sub2[1], perc_cutoff) != float("inf")
 
 
 def merge(sub1, sub2):
