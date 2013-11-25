@@ -173,7 +173,7 @@ def compute_score_naive(bin_clusters, first_only=True):
                 tries = 0 #start at 1 so no div by zero stuff
                 
                 
-                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=False)
                 
                 #Iterate until we find the match
                 for score in scores:
@@ -190,7 +190,7 @@ def compute_score_naive(bin_clusters, first_only=True):
                 temp_loop_set = []
                 scores[0][0].get_loops(temp_loop_set)
                 model_score = 0.0
-                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=True)
+                structure_score = scores[0][0].compare(model, max_rmsd=-1, verbose=False)
                 if loop in temp_loop_set:
                     model_score = 1.0
                     cluster_partial_structure_score[0][0] += structure_score
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     # Initial loop extraction
     ###########################################################################
     Model.verbose = False
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=1000)
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=200)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False
@@ -287,13 +287,16 @@ if __name__ == '__main__':
     while x < .2:
         x += .01
         print ("########perc_cutoff=%f" % x) + "###########"
-#         validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
+        validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
           
-        bin_clusters = []
-        for bin in bins:
-            #print "Bin:", (bin[0], bin[1], len(bin[2])) 
-            clusters = hierarchical(bin[2], perc_cutoff=x)
-            bin_clusters.append((bin, clusters))
+#         bin_clusters = []
+#         for bin in bins:
+#             #print "Bin:", (bin[0], bin[1], len(bin[2])) 
+#             clusters = hierarchical(bin[2], perc_cutoff=x)
+#             bin_clusters.append((bin, clusters))
+#             
+#         generate_histogram_data(bin_clusters)
+#         compute_score_naive(bin_clusters)
      
     #         # Debug: Display the representative model(s) resulting from clustering
     #         print "\n\n\n\n----Results----"
@@ -306,29 +309,27 @@ if __name__ == '__main__':
         # Classify - given an input (loop) sequence, match it to some loop cluster
         # or inform user that the loop cannot be characterized
         ###########################################################################
-        test_seq = "NGEMFT"
-        print "> Input Sequence:", test_seq, "with length:", len(test_seq)
-         
-        # First, eliminate bins that don't have sequences with the same length as
-        # the input sequence.
-        valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
+#         test_seq = "NGEMFT"
+#         print "> Input Sequence:", test_seq, "with length:", len(test_seq)
+#          
+#         # First, eliminate bins that don't have sequences with the same length as
+#         # the input sequence.
+#         valid_bin_clusters = [bc for bc in bin_clusters if bc[0][0] == len(test_seq)]
      
         # Now use the valid clusters to attempt to classify the input sequence.
-        prediction_scores = []
-        for bc in valid_bin_clusters:
-            prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
+#         prediction_scores = []
+#         for bc in valid_bin_clusters:
+#             prediction_scores.extend( classify_loop_seq(test_seq, bc[1], subst=blosum62) )
+#      
+#         ## Display results ########################################################
+#         sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
+#         TOP_SCORES = 5
+#         for modelNum, model in enumerate(prediction_scores):
+#             print "Model Score:", model[1], "\n", model[0]
+#              
+#             # Only display a total of TOP_SCORES of the best models/scores
+#             if modelNum >= TOP_SCORES-1: break
      
-        ## Display results ########################################################
-        sorted_prediction_scores = prediction_scores.sort(key=lambda x: x[1], reverse=True)
-        TOP_SCORES = 5
-        for modelNum, model in enumerate(prediction_scores):
-            print "Model Score:", model[1], "\n", model[0]
-             
-            # Only display a total of TOP_SCORES of the best models/scores
-            if modelNum >= TOP_SCORES-1: break
-     
-        generate_histogram_data(bin_clusters)
-        compute_score_naive(bin_clusters)
     ###########################################################################
    
     ###########################################################################
