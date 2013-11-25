@@ -139,7 +139,7 @@ class Model:
             oPoint = [other.positions[i].x, other.positions[i].y, other.positions[i].z]
             avg_rmsd += rmsd(sPoint, oPoint)
         avg_rmsd /= len(self.positions)
-        
+        avg_rmsd = 0
         #Cutoffs
         if(max_rmsd > 0 and avg_rmsd > max_rmsd): #must be at most 2 angstroms apart
             if(verbose): print "Structure mismatch! %f > %f" % (avg_rmsd, max_rmsd) 

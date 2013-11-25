@@ -254,7 +254,7 @@ if __name__ == '__main__':
     # Initial loop extraction
     ###########################################################################
     Model.verbose = False
-    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=200)
+    loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=-1, fileLimit=500)
 
     # Indicates whether or not to write Model representations of loops to console
     display_loop_model_debug = False
@@ -283,20 +283,23 @@ if __name__ == '__main__':
     
     # Bin_Clusters is a list of tubles where the first element is the bin tuple
     # and the second element is the clusters returned from hierarchical clustering.
-    x = 0.0
-    while x < .2:
-        x += .01
-        print ("########perc_cutoff=%f" % x) + "###########"
-        validation.do_xval_knn(loops, nfold=5, nrep=5, perc_cutoff=x)
+#     x = 0.0
+#     while x < .2:
+#         x += .01
+#         print ("########perc_cutoff=%f" % x) + "###########"
+
+#     Model.verbose = True
+
+#     validation.do_xval_knn(loops, nfold=5, nrep=5)
           
-#         bin_clusters = []
-#         for bin in bins:
-#             #print "Bin:", (bin[0], bin[1], len(bin[2])) 
-#             clusters = hierarchical(bin[2], perc_cutoff=x)
-#             bin_clusters.append((bin, clusters))
-#             
-#         generate_histogram_data(bin_clusters)
-#         compute_score_naive(bin_clusters)
+    bin_clusters = []
+    for bin in bins:
+        #print "Bin:", (bin[0], bin[1], len(bin[2])) 
+        clusters = hierarchical(bin[2])
+        bin_clusters.append((bin, clusters))
+         
+    generate_histogram_data(bin_clusters)
+    compute_score_naive(bin_clusters)
      
     #         # Debug: Display the representative model(s) resulting from clustering
     #         print "\n\n\n\n----Results----"
