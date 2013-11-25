@@ -157,7 +157,7 @@ if __name__ == '__main__':
     loops = extract_loops_from_dir(pdb_dir="pdb", loopLimit=LOOPS, fileLimit=FILES)
     print "\nData Load Time:", time() - start_time, "seconds"
 
-    print "\nTotal Loops:", len(loops), "\n"
+    print "\nTotal Files:", FILES, "Total Loops:", len(loops), "\n"
 
     ###########################################################################
     # Run Cross-Validation
